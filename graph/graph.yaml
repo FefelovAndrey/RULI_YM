@@ -1,0 +1,122 @@
+# project: ym-ruli
+# Канон графа. Правки — сюда; graph.md обновить следом.
+# Схема: schema.md | Логика repo: ../meta/FOLDER-LOGIC.md
+
+version: "0.1"
+updated: "2026-08-24"
+tracker_project: null  # заполнить id проекта Tracker
+ini: null              # например INI-36
+
+waves:
+  - id: W1-FOUNDATION
+    title: Foundation (каталог / признак / базовые обмены)
+    status: planned
+  - id: W2-CORE
+    title: Core (цены / остатки / заказы — уточнить)
+    status: planned
+  - id: W3-EXCEPTIONS
+    title: Exceptions (возвраты / сбои / ручные контуры)
+    status: planned
+
+nodes:
+  # --- decisions (заполнить после Options) ---
+  # - id: D-PUSH-VS-POLL
+  #   type: decision
+  #   status: open
+  #   title: Push vs poll для остатков/заказов
+  #   file: ../decisions/D-PUSH-VS-POLL.md
+
+  # --- capabilities ---
+  - id: C-YM-API
+    type: capability
+    status: planned
+    title: Интеграция с Yandex Market Partner API
+    systems: [ym]
+
+  # --- entities (черновик) ---
+  - id: E-OFFER
+    type: entity
+    status: planned
+    title: Карточка/оффер на ЯМ
+  - id: E-STOCK
+    type: entity
+    status: planned
+    title: Остаток / складской остаток для ЯМ
+  - id: E-ORDER
+    type: entity
+    status: planned
+    title: Заказ ЯМ
+
+  # --- features (скелет — уточнять после Reality Brief) ---
+  - id: F-CATALOG
+    type: feature
+    status: planned
+    title: Каталог / маппинг атрибутов в ЯМ
+    wave: W1-FOUNDATION
+    depends_on: [C-YM-API]
+    shares_entity: [E-OFFER]
+  - id: F-PRICE-SYNC
+    type: feature
+    status: planned
+    title: Синхронизация цен
+    wave: W2-CORE
+    depends_on: [C-YM-API, F-CATALOG]
+    shares_entity: [E-OFFER]
+  - id: F-STOCK-SYNC
+    type: feature
+    status: planned
+    title: Синхронизация остатков
+    wave: W2-CORE
+    depends_on: [C-YM-API, F-CATALOG]
+    shares_entity: [E-STOCK]
+  - id: F-ORDERS
+    type: feature
+    status: planned
+    title: Заказы (приём / статусы / отгрузка)
+    wave: W2-CORE
+    depends_on: [C-YM-API, F-STOCK-SYNC]
+    shares_entity: [E-ORDER]
+  - id: F-RETURNS
+    type: feature
+    status: planned
+    title: Возвраты / претензии
+    wave: W3-EXCEPTIONS
+    depends_on: [F-ORDERS]
+    shares_entity: [E-ORDER]
+
+  # --- shared rules (появляются когда делят ≥2 фичи) ---
+  # - id: R-STOCK-SOURCE
+  #   type: rule
+  #   status: open
+  #   title: Кто source of truth остатка для ЯМ
+  #   shared_by: [F-STOCK-SYNC, F-ORDERS]
+
+edges:
+  - from: F-PRICE-SYNC
+    to: F-CATALOG
+    type: depends_on
+  - from: F-STOCK-SYNC
+    to: F-CATALOG
+    type: depends_on
+  - from: F-ORDERS
+    to: F-STOCK-SYNC
+    type: depends_on
+  - from: F-RETURNS
+    to: F-ORDERS
+    type: depends_on
+  - from: C-YM-API
+    to: F-CATALOG
+    type: enables
+  - from: C-YM-API
+    to: F-PRICE-SYNC
+    type: enables
+  - from: C-YM-API
+    to: F-STOCK-SYNC
+    type: enables
+  - from: C-YM-API
+    to: F-ORDERS
+    type: enables
+
+notes:
+  - Скелет намеренный: уточнить узлы после research/ Reality Brief.
+  - Не добавлять узел на каждую задачу Tracker — только сквозные стыки.
