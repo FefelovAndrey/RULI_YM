@@ -4,18 +4,18 @@
 
 version: "0.1"
 updated: "2026-08-24"
-tracker_project: null  # заполнить id проекта Tracker
-ini: null              # например INI-36
+tracker_project: 747
+ini: INI-36
 
 waves:
   - id: W1-FOUNDATION
-    title: Foundation (каталог / признак / базовые обмены)
+    title: Волна 1 charter — FBS e2e (каталог, цены, остатки, заказы, возвраты)
     status: planned
   - id: W2-CORE
-    title: Core (цены / остатки / заказы — уточнить)
+    title: После волны 1 (отчёты WA и прочее из INI — не блокер e2e)
     status: planned
   - id: W3-EXCEPTIONS
-    title: Exceptions (возвраты / сбои / ручные контуры)
+    title: Позже (FBO/DBS, взаиморасчёты, претензии сверх клиентского возврата)
     status: planned
 
 nodes:
@@ -55,32 +55,35 @@ nodes:
     wave: W1-FOUNDATION
     depends_on: [C-YM-API]
     shares_entity: [E-OFFER]
+    tracker: DEVEL-2601
   - id: F-PRICE-SYNC
     type: feature
     status: planned
     title: Синхронизация цен
-    wave: W2-CORE
+    wave: W1-FOUNDATION
     depends_on: [C-YM-API, F-CATALOG]
     shares_entity: [E-OFFER]
+    tracker: DEVEL-2600
   - id: F-STOCK-SYNC
     type: feature
     status: planned
     title: Синхронизация остатков
-    wave: W2-CORE
+    wave: W1-FOUNDATION
     depends_on: [C-YM-API, F-CATALOG]
     shares_entity: [E-STOCK]
+    tracker: DEVEL-2599
   - id: F-ORDERS
     type: feature
     status: planned
-    title: Заказы (приём / статусы / отгрузка)
-    wave: W2-CORE
+    title: Заказы FBS (приём / статусы / отгрузка)
+    wave: W1-FOUNDATION
     depends_on: [C-YM-API, F-STOCK-SYNC]
     shares_entity: [E-ORDER]
   - id: F-RETURNS
     type: feature
     status: planned
-    title: Возвраты / претензии
-    wave: W3-EXCEPTIONS
+    title: Возвраты клиента FBS
+    wave: W1-FOUNDATION
     depends_on: [F-ORDERS]
     shares_entity: [E-ORDER]
 
@@ -116,7 +119,11 @@ edges:
   - from: C-YM-API
     to: F-ORDERS
     type: enables
+  - from: C-YM-API
+    to: F-RETURNS
+    type: enables
 
 notes:
-  - Скелет намеренный: уточнить узлы после research/ Reality Brief.
+  - Волна 1 = charter FBS e2e; F-RETURNS не откладывать в W3.
+  - Уточнять узлы после research/ Reality Brief.
   - Не добавлять узел на каждую задачу Tracker — только сквозные стыки.

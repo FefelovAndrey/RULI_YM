@@ -73,7 +73,7 @@
 
 ## Связи
 
-- Граф: `graph/graph.yaml` — скелет F-CATALOG / F-PRICE-SYNC / F-STOCK-SYNC / F-ORDERS / F-RETURNS; **волна F-RETURNS в графе ещё W3 — сдвинуть в W1**
+- Граф: `graph/graph.yaml` — F-CATALOG / F-PRICE-SYNC / F-STOCK-SYNC / F-ORDERS / F-RETURNS все в **W1** (FBS e2e)
 - Трекер: `context/03-tracker.md`
 - Инициатива: [INI-36](https://tracker.yandex.ru/INI-36) — статус на момент черновика: **На комитет**
 - Логика repo: `meta/FOLDER-LOGIC.md`

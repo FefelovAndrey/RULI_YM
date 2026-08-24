@@ -1,12 +1,13 @@
 # Граф проекта — вид для человека
 
-Канон: [graph.yaml](graph.yaml). Схема: [schema.md](schema.md).
+Канон: [graph.yaml](graph.yaml). Схема: [schema.md](schema.md).  
+Инициатива: [INI-36](https://tracker.yandex.ru/INI-36). Проект: [747](https://tracker.yandex.ru/pages/projects/747).
 
-## Позвоночник (черновик)
+## Позвоночник (волна 1)
 
 ```text
-Каталог/оффер → Цены → Остатки → Заказы → (Возвраты)
-         └────────── C-YM-API ──────────┘
+Каталог/оффер → Цены → Остатки → Заказы FBS → Возвраты FBS
+         └────────────── C-YM-API ──────────────┘
 ```
 
 Уточняется после `research/briefs/reality-brief.md`.
@@ -15,19 +16,19 @@
 
 | ID | Название | Статус |
 |----|----------|--------|
-| W1-FOUNDATION | Foundation | planned |
-| W2-CORE | Core | planned |
-| W3-EXCEPTIONS | Exceptions | planned |
+| W1-FOUNDATION | Волна 1 charter — FBS e2e | planned |
+| W2-CORE | После волны 1 (отчёты WA и др.) | planned |
+| W3-EXCEPTIONS | Позже (FBO/DBS, взаиморасчёты, претензии сверх возврата) | planned |
 
 ## Фичи (слой 1)
 
-| ID | Title | Wave | depends_on |
-|----|-------|------|------------|
-| F-CATALOG | Каталог / маппинг | W1 | C-YM-API |
-| F-PRICE-SYNC | Цены | W2 | C-YM-API, F-CATALOG |
-| F-STOCK-SYNC | Остатки | W2 | C-YM-API, F-CATALOG |
-| F-ORDERS | Заказы | W2 | C-YM-API, F-STOCK-SYNC |
-| F-RETURNS | Возвраты | W3 | F-ORDERS |
+| ID | Title | Wave | depends_on | Tracker |
+|----|-------|------|------------|---------|
+| F-CATALOG | Каталог / маппинг | W1 | C-YM-API | [DEVEL-2601](https://tracker.yandex.ru/DEVEL-2601) |
+| F-PRICE-SYNC | Цены | W1 | C-YM-API, F-CATALOG | [DEVEL-2600](https://tracker.yandex.ru/DEVEL-2600) |
+| F-STOCK-SYNC | Остатки | W1 | C-YM-API, F-CATALOG | [DEVEL-2599](https://tracker.yandex.ru/DEVEL-2599) |
+| F-ORDERS | Заказы FBS | W1 | C-YM-API, F-STOCK-SYNC | ещё нет (после PRD) |
+| F-RETURNS | Возвраты клиента FBS | W1 | F-ORDERS | ещё нет (после PRD) |
 
 ## Mermaid
 
@@ -41,7 +42,10 @@ flowchart LR
   C --> F2
   C --> F3
   C --> F4
+  C --> F5
 ```
+
+Все пять фич — **W1**. W3 больше не про возвраты.
 
 ## Blast radius — как считать
 
