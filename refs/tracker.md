@@ -11,9 +11,11 @@
 
 | Поле | Значение |
 |------|----------|
-| INI | _(заполнить)_ |
-| Project id | _(заполнить)_ |
-| URL | _(заполнить)_ |
+| INI | [INI-36](https://tracker.yandex.ru/INI-36) |
+| Project id | 747 |
+| URL | [проект](https://tracker.yandex.ru/pages/projects/747) · [задачи](https://tracker.yandex.ru/pages/projects/747/issues) |
+
+Канон навигации: `context/03-tracker.md`.
 
 ## Шаблоны YQL
 
@@ -22,7 +24,7 @@ Queue: INI AND Summary: Яндекс
 ```
 
 ```text
-Project: <id>
+Project: 747
 ```
 
 ## Запись
