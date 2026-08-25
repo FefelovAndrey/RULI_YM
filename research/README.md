@@ -14,6 +14,7 @@
 |------|------------|
 | [as-is/](as-is/) | Процесс, карта систем, data readiness |
 | [evidence/](evidence/) | Сырьё: code, db, tracker, external |
+| [evidence/external/ym-fbs-battle-map.md](evidence/external/ym-fbs-battle-map.md) | Карта процессов ЯМ FBS (открытые доки) → наложение на AS IS |
 | [briefs/](briefs/) | Reality Brief, Open Questions |
 
 Логика: [../meta/FOLDER-LOGIC.md](../meta/FOLDER-LOGIC.md)

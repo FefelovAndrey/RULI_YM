@@ -1,0 +1,866 @@
+# Канон процессов Яндекс Маркета (FBS) для наложения на внутренний AS IS.
+# Человеческий вид: ym-fbs-battle-map.md
+# Не путать с graph.yaml: здесь внешние процессы Маркета, не фичи RULI.
+
+version: "0.1"
+updated: "2026-08-25"
+source_of_truth: official-public-docs
+model_in_scope: FBS
+models_out_of_scope: [FBY, DBS, Express, LaaS, MarketYandexGo]
+wave_hint: W1-FOUNDATION
+charter: ../../context/00-charter.md
+docs_index: https://yandex.ru/dev/market/partner-api/doc/ru/llms.txt
+api_base: https://api.partner.market.yandex.ru
+openapi: https://github.com/yandex-market/yandex-market-partner-api
+
+# Два уровня API. Путать их нельзя.
+levels:
+  cabinet:
+    id_param: businessId
+    meaning: Кабинет продавца. Каталог общий на все магазины.
+  shop:
+    id_param: campaignId
+    meaning: Магазин внутри кабинета (кампания). Заказы, отгрузки, цены магазина.
+  how_to_get_ids:
+    method: GET v2/campaigns
+    url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/campaigns/getCampaigns.md
+
+integration_channels:
+  - id: partner-api
+    primary_for: automation
+    note: HTTPS, заголовок Api-Key. OAuth 2.0 помечен устаревшим.
+  - id: api-notifications
+    primary_for: order-events
+    note: Маркет стучится к нам POST notification. Необязательно, но без этого опрос раз в час.
+  - id: cabinet-ui
+    primary_for: setup-and-exceptions
+  - id: excel
+    primary_for: catalog-prices-stocks-bootstrap
+  - id: yml
+    primary_for: stocks-alongside-api
+  - id: 1c-module
+    url: https://yandex.ru/dev/market/partner-api/doc/ru/modules/1c.md
+    note: Официальный модуль Маркета для 1С. Наличие в контуре RULI — вопрос к AS IS.
+  - id: cms-modules
+    url: https://yandex.ru/support/marketplace/ru/tools/api-modules
+
+cross_cutting:
+  auth:
+    token: Api-Key
+    create: https://yandex.ru/dev/market/partner-api/doc/ru/concepts/api-key.md
+    scopes: https://yandex.ru/dev/market/partner-api/doc/ru/concepts/access.md
+    max_tokens: 30
+    header: "Api-Key: <token>"
+  limits:
+    url: https://yandex.ru/dev/market/partner-api/doc/ru/concepts/limits.md
+    parallel_requests: 4
+    max_body_kb: 512
+    pagination: pageToken+limit  # page/pageSize устарели
+    over_limit_http: 420
+  sandbox:
+    url: https://yandex.ru/dev/market/partner-api/doc/ru/concepts/sandbox.md
+    flag: fake=true
+    note: Не портят индекс качества. В списках заказов по умолчанию не видны.
+  push:
+    url: https://yandex.ru/dev/market/partner-api/doc/ru/push-notifications/index.md
+    endpoint_we_expose: POST notification
+    https_only: true
+    no_self_signed_cert: true
+    ping_timeout_sec: 1
+    event_timeout_sec: 10
+    poll_fallback_fbs: "не реже раза в час"
+
+# Порядок happy path FBS. Исключения — внутри процессов.
+happy_path:
+  - P-YM-AUTH
+  - P-YM-WAREHOUSE
+  - P-YM-CATALOG
+  - P-YM-CONTENT
+  - P-YM-PLACEMENT
+  - P-YM-PRICE
+  - P-YM-STOCK
+  - P-YM-ORDER-IN
+  - P-YM-ORDER-PACK
+  - P-YM-SHIPMENT
+  - P-YM-RETURN
+
+processes:
+  - id: P-YM-AUTH
+    title: Доступ к API и идентификаторы
+    wave: W1
+    graph_hint: C-YM-API
+    required: true
+    ym_specifics:
+      - Токен создаёт владелец или менеджер кабинета. До 30 штук, бессрочный, пока не удалят.
+      - Доступы режутся по группам методов (карточки, цены, заказы, финансы, чаты).
+      - businessId и campaignId достаются одним GET v2/campaigns по токену.
+      - OAuth 2.0 в доке помечен как устаревший.
+    methods:
+      - verb: GET
+        path: "/v2/campaigns"
+        title: Список магазинов и идентификаторы
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/campaigns/getCampaigns.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}"
+        title: Информация о магазине
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/campaigns/getCampaign.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/settings"
+        title: Настройки кабинета (в т.ч. onlyDefaultPrice)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/businesses/getBusinessSettings.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/settings"
+        title: Настройки магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/campaigns/getCampaignSettings.md
+      - verb: POST
+        path: "/v2/auth/token"
+        title: Информация о токене и доступах
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/auth/getAuthTokenInfo.md
+    overlay_on:
+      - Кто хранит токен, кто его ротирует
+      - Один кабинет или несколько магазинов/campaignId
+      - Есть ли уже мёртвая интеграция, которую нельзя чинить поверх
+
+  - id: P-YM-WAREHOUSE
+    title: Склад FBS и график отгрузок
+    wave: W1
+    graph_hint: C-YM-API
+    required: true
+    setup_mostly_in: cabinet
+    ym_specifics:
+      - FBS = товар на нашем складе, доставку дальше делает Маркет. Отгрузка — пачка заказов раз в день, не по одному.
+      - Адрес склада должен быть реальным. Точка приёма (СЦ или ПВЗ) выбирается в кабинете.
+      - График: «в тот же день» или «на следующий». Выходные сдвигают отгрузку на ближайший рабочий.
+      - КГТ (>15 кг или >70 см по стороне) едет не в любую точку.
+      - Группы складов меняют метод передачи остатков.
+      - Отключение модели склада скрывает товары ~15 минут; если модель выключена 30+ дней — возврат на витрину до 4 часов. Если модель выключил сам Маркет, методом её не включить.
+    methods:
+      - verb: POST
+        path: "/v3/businesses/{businessId}/warehouses"
+        title: Список складов (без групп складов)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/warehouses/getPartnerWarehouses.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/warehouses"
+        title: Список складов / группы / статусы
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/warehouses/getPagedWarehouses.md
+      - verb: POST
+        path: "/v3/businesses/{businessId}/warehouse/models/status"
+        title: Включить/выключить модель склада
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/warehouses/updateWarehouseModelStatus.md
+    support:
+      - https://yandex.ru/support/marketplace/ru/start/models/fbs
+      - https://yandex.ru/support/marketplace/ru/orders/fbs/logistics.md
+      - https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/warehouses.md
+    overlay_on:
+      - Адрес и график склада RULI vs кабинет ЯМ
+      - Есть ли группы складов в кабинете
+      - Кто физически отвозит в СЦ/ПВЗ
+
+  - id: P-YM-PUSH
+    title: События заказов (уведомления или опрос)
+    wave: W1
+    graph_hint: F-ORDERS
+    required: recommended
+    ym_specifics:
+      - Маркет рекомендует API-уведомления. Без них FBS/DBS нужно опрашивать не реже раза в час (Экспресс — каждые 10–15 мин).
+      - Наш endpoint только HTTPS с сертификатом УЦ, не самоподписанным. Проверка IP Маркета.
+      - PING при подключении: ответ 200 за 1 секунду. Обычные события — 10 секунд.
+      - Если молчим, Маркет ретраит и через 14 дней отключает уведомления (магазин при этом продаёт дальше).
+      - Тестовые заказы тоже приходят в уведомлениях.
+      - Если повесить одно и то же на кабинет и на магазин, уйдёт одно уведомление — на URL магазина.
+    methods:
+      - verb: POST
+        path: "notification"
+        title: Входящее уведомление (наш endpoint)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/push-notifications/reference/sendNotification.md
+      - verb: POST
+        path: "/v1/businesses/{businessId}/orders"
+        title: Детали заказа после события
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getBusinessOrders.md
+    event_types:
+      - создание / изменение / смена статуса заказа
+      - заявка на отмену / отмена
+      - невыкуп или возврат / смена статуса возврата
+      - чат, спор, отзыв (для W1 не обязательны)
+    overlay_on:
+      - Push vs poll — кандидат в D-*
+      - Есть ли у WA публичный HTTPS endpoint
+
+  - id: P-YM-CATALOG
+    title: Каталог и товарные карточки
+    wave: W1
+    graph_hint: F-CATALOG
+    tracker_hint: DEVEL-2601
+    required: true
+    ym_specifics:
+      - Каталог живёт на уровне кабинета. SKU продавца = offerId, уникален в кабинете.
+      - Карточку Маркет собирает сам и может перепривязать оффер к другой карточке, даже если передали marketSku.
+      - Категория — только листовая (без дочерних). Характеристики разные по категориям и со временем меняются.
+      - Штрихкод производителя, иначе генерация штрихкода Маркета.
+      - Не все товары можно продавать на Маркете и не все — по FBS. Ограничения в справке.
+      - После загрузки товар ещё не на витрине: нужны условия размещения в магазине (P-YM-PLACEMENT).
+    methods:
+      - verb: POST
+        path: "/v2/categories/tree"
+        title: Дерево категорий
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/categories/getCategoriesTree.md
+      - verb: POST
+        path: "/v2/category/{categoryId}/parameters"
+        title: Характеристики категории
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/content/getCategoryContentParameters.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-mappings/update"
+        title: Добавить/изменить товары в каталоге
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/business-offer-mappings/updateOfferMappings.md
+      - verb: POST
+        path: "/v1/businesses/{businessId}/offer-mappings/barcodes/generate"
+        title: Генерация штрихкодов Маркета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/business-offer-mappings/generateOfferBarcodes.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-mappings"
+        title: Товары в каталоге и привязка к карточкам
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/business-offer-mappings/getOfferMappings.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-mappings/delete"
+        title: Удалить из каталога
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/business-offer-mappings/deleteOffers.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-mappings/archive"
+        title: В архив
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/business-offer-mappings/addOffersToArchive.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-mappings/unarchive"
+        title: Из архива
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/business-offer-mappings/deleteOffersFromArchive.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/assortment-add-goods.md
+    overlay_on:
+      - PIM vs WA как источник карточки
+      - Маппинг категорий и атрибутов RULI → листовые категории ЯМ
+      - Стабильность offerId / SKU
+
+  - id: P-YM-CONTENT
+    title: Наполнение карточки (категорийные характеристики)
+    wave: W1
+    graph_hint: F-CATALOG
+    required: true
+    ym_specifics:
+      - updateOfferMappings передаёт основу; категорийный контент — отдельный контур offer-cards.
+      - Всегда полный набор характеристик. Пустое значение затирает то, что уже стояло.
+      - Списки параметров категории нужно периодически перечитывать: Маркет их дополняет.
+    methods:
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-cards"
+        title: Статус заполненности карточек
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/content/getOfferCardsContentStatus.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-cards/update"
+        title: Записать категорийные характеристики
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/content/updateOfferContent.md
+      - verb: POST
+        path: "/v2/category/{categoryId}/parameters"
+        title: Актуальный список характеристик
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/content/getCategoryContentParameters.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/content-change.md
+    overlay_on:
+      - Полнота PIM по категориям ЯМ
+      - Кто чинит карточки после отказа модерации
+
+  - id: P-YM-PLACEMENT
+    title: Условия продажи в магазине (витрина)
+    wave: W1
+    graph_hint: F-CATALOG
+    required: true
+    ym_specifics:
+      - Каталог кабинета ≠ витрина магазина. На витрину товар попадает после условий размещения.
+      - НДС, квант продажи, минимальный объём заказа — здесь. Для DBS ещё доставка (нам не нужно).
+      - Скрытие с витрины — отдельный контур hidden-offers, не удаление из каталога.
+    methods:
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/offers/update"
+        title: Условия продажи в магазине
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/offers/updateCampaignOffers.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/offers"
+        title: Товары магазина и статусы на витрине
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/offers/getCampaignOffers.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/offers/delete"
+        title: Убрать из ассортимента магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/offers/deleteCampaignOffers.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/hidden-offers"
+        title: Список скрытых
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/hidden-offers/getHiddenOffers.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/hidden-offers"
+        title: Скрыть с витрины
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/hidden-offers/addHiddenOffers.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/hidden-offers/delete"
+        title: Вернуть на витрину
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/hidden-offers/deleteHiddenOffers.md
+      - verb: GET
+        path: "/v2/categories/max-sale-quantum"
+        title: Лимит кванта (см. док метода)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/categories/getCategoriesMaxSaleQuantum.md
+    statuses_help: https://yandex.ru/support/marketplace/assortment/add/statuses.html
+    overlay_on:
+      - Как сейчас включают/выключают SKU на других МП
+      - НДС в 1С vs то, что ждёт ЯМ
+
+  - id: P-YM-PRICE
+    title: Цены и карантин
+    wave: W1
+    graph_hint: F-PRICE-SYNC
+    tracker_hint: DEVEL-2600
+    required: true
+    ym_specifics:
+      - Цена кабинета (все магазины) или цена конкретного магазина. Выбор смотрится в onlyDefaultPrice настроек кабинета.
+      - Скидка на витрине — прежняя цена + новая; скидка 5–99%.
+      - Карантин: резкое падение относительно своей старой цены (по умолчанию больше чем в 2 раза) или относительно рынка. Пока не подтвердите — по новой цене не продаётся.
+      - НДС передаётся не в методе цен, а в условиях продажи (offers/update).
+      - Калькулятор тарифов — чтобы цена на витрине не ушла в минус после комиссии.
+    methods:
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-prices/updates"
+        title: Цены на все магазины
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/prices/updateBusinessPrices.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/offer-prices/updates"
+        title: Цены в одном магазине
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/prices/updatePrices.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offer-prices"
+        title: Прочитать цены кабинета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/prices/getDefaultPrices.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/offer-prices"
+        title: Прочитать цены магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/prices/getPricesByOfferIds.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/price-quarantine"
+        title: Карантин кабинета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/price-quarantine/getBusinessQuarantineOffers.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/price-quarantine/confirm"
+        title: Подтвердить карантин кабинета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/price-quarantine/confirmBusinessPrices.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/price-quarantine"
+        title: Карантин магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/price-quarantine/getCampaignQuarantineOffers.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/price-quarantine/confirm"
+        title: Подтвердить карантин магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/price-quarantine/confirmCampaignPrices.md
+      - verb: POST
+        path: "/v2/tariffs/calculate"
+        title: Калькулятор услуг Маркета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/tariffs/calculateTariffs.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/offers/recommendations"
+        title: Рекомендации по ценам
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/offers/getOfferRecommendations.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/assortment-change-prices.md
+    overlay_on:
+      - Логика цены для ЯМ (DEVEL-2600)
+      - Кто подтверждает карантин
+      - Нужны ли акционные цены (P-YM-PROMO — не W1)
+
+  - id: P-YM-STOCK
+    title: Остатки
+    wave: W1
+    graph_hint: F-STOCK-SYNC
+    tracker_hint: DEVEL-2599
+    required: true
+    ym_specifics:
+      - Передавать свободно доступное к новым заказам, не «сколько лежит на полке всего».
+      - Заказы ЯМ Маркет сам резервирует на витрине. Наш фид должен уже вычитать и продажи на других каналах.
+      - Если FBS-заказ отменили после «Готов к отгрузке», Маркет остаток сам не вернёт — нужно распаковать и передать новое число.
+      - Обновление на витрине до 15 минут. Минимум раз в день, по смыслу — чаще, иначе отмены и индекс.
+      - Два метода: без групп складов — v3 businesses/.../stocks/update; с группами — PUT v2 campaigns/.../offers/stocks (и остаток на один склад группы).
+      - API можно мешать с Excel/YML.
+    methods:
+      - verb: POST
+        path: "/v3/businesses/{businessId}/offers/stocks/update"
+        title: Передать остатки (нет групп складов)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/stocks/updateStocksOnPartnerWarehouses.md
+      - verb: POST
+        path: "/v3/businesses/{businessId}/offers/stocks"
+        title: Прочитать остатки (нет групп складов)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/stocks/getStocksOnPartnerWarehouses.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/offers/stocks"
+        title: Передать остатки (есть группы складов)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/stocks/updateStocks.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/offers/stocks"
+        title: Остатки и оборачиваемость магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/stocks/getStocks.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/stocks.md
+    support: https://yandex.ru/support/marketplace/ru/assortment/operations/stocks
+    overlay_on:
+      - SoT остатка (1С / WA / склад)
+      - Есть ли группы складов
+      - Как считается «доступно для МП» на Ozon и можно ли переиспользовать
+
+  - id: P-YM-ORDER-IN
+    title: Приём заказа FBS
+    wave: W1
+    graph_hint: F-ORDERS
+    required: true
+    ym_specifics:
+      - Новый заказ в кабинете: «Ждут сборки» / «Можно обрабатывать». Есть плановая дата отгрузки.
+      - Сразу проверить наличие. Если нет — не собирать вслепую (см. P-YM-ORDER-FAIL).
+      - Заказы от бизнеса: статус «Ожидает оплаты» до 5 рабочих дней; товар лучше отложить. Состав такого заказа через кабинет резать нельзя. Первый отменённый бизнес-заказ снимает товары с витрины B2B.
+      - Тестовые заказы: параметр fake=true; в обычной выборке их нет.
+    methods:
+      - verb: POST
+        path: "/v1/businesses/{businessId}/orders"
+        title: Список и детали заказов кабинета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getBusinessOrders.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders"
+        title: Список заказов магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrders.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}"
+        title: Один заказ магазина
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrder.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/external-id"
+        title: Внешний номер заказа (наш id)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/updateExternalOrderId.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/business-buyer"
+        title: "Покупатель-юрлицо"
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/order-business-information/getOrderBusinessBuyerInfo.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/documents"
+        title: Документы заказа B2B
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/order-business-information/getOrderBusinessDocumentsInfo.md
+    how_to:
+      - https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/orders-receive.md
+      - https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/fbs.md
+      - https://yandex.ru/support/marketplace/ru/orders/fbs/process
+    overlay_on:
+      - Как WA/1С принимают заказ Ozon FBS
+      - Нужен ли B2B на волне 1
+      - Маппинг статусов ЯМ → наши статусы
+
+  - id: P-YM-ORDER-PACK
+    title: Сборка, коробки, маркировка, ярлыки, «Готов к отгрузке»
+    wave: W1
+    graph_hint: F-ORDERS
+    required: true
+    ym_specifics:
+      - Лист сборки — асинхронный отчёт (generate → poll report info).
+      - Коробки и коды маркировки передаются одним PUT .../boxes. Пока статус не READY_TO_SHIP, запрос можно повторять — каждый раз полная замена.
+      - По доке API маркировка Честного знака для физлиц не обязательна; ювелирка и ряд категорий — нужна, плюс проверка кодов. Возврат с КИЗ — ввод обратно в оборот.
+      - Ярлык Маркета на каждое грузоместо. Старые наклейки снять. Нечитаемый ШК: отключение после трёх таких заказов.
+      - Статус «Готов к отгрузке»: PROCESSING + READY_TO_SHIP. Без этого заказ не попадёт в акт.
+      - Упаковка по правилам Маркета; ответственность на продавце. Сборку советуют снимать на видео.
+    methods:
+      - verb: POST
+        path: "/v2/reports/documents/shipment-list/generate"
+        title: Генерация листа сборки
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateShipmentListDocumentReport.md
+      - verb: GET
+        path: "/v2/reports/info/{reportId}"
+        title: Статус/файл отчёта
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/getReportInfo.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/boxes"
+        title: Коробки + коды маркировки
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/setOrderBoxLayout.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/identifiers/status"
+        title: Статус проверки кодов
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/getOrderIdentifiersStatus.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/identifiers"
+        title: Передача кодов (отдельный метод)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/provideOrderItemIdentifiers.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/delivery/labels"
+        title: Ярлыки одного заказа
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/order-labels/generateOrderLabels.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/delivery/shipments/{shipmentId}/boxes/{boxId}/label"
+        title: Ярлык одной коробки
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/order-labels/generateOrderLabel.md
+      - verb: POST
+        path: "/v2/reports/documents/labels/generate"
+        title: Ярлыки пачкой
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateMassOrderLabelsReport.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/delivery/labels/data"
+        title: Данные для своих ярлыков
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/order-labels/getOrderLabelsData.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/status"
+        title: Сменить статус одного заказа
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/updateOrderStatus.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/orders/status-update"
+        title: Сменить статусы пачкой
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/updateOrderStatuses.md
+    packaging:
+      - https://yandex.ru/support/marketplace/ru/orders/fbs/packaging/rules
+      - https://yandex.ru/support/marketplace/ru/orders/fbs/packaging/marking
+    overlay_on:
+      - Сборочное место склада RULI
+      - Печать ярлыков (уже есть для Ozon?)
+      - Честный знак в контуре заказа
+
+  - id: P-YM-SHIPMENT
+    title: Отгрузка first-mile (акт, машина, СЦ/ПВЗ)
+    wave: W1
+    graph_hint: F-ORDERS
+    required: true
+    ym_specifics:
+      - Одна отгрузка в день. Акт на все заказы сразу, не на каждый.
+      - Через API акт и подтверждение отгрузки — после того как ВСЕ заказы в отгрузке READY_TO_SHIP или отменены. Иначе ошибка со списком неготовых.
+      - В кабинете «подписать акт» отдельно; через API подтверждение — обязательный шаг, в UI его нет.
+      - Электронный акт = юр. сила бумажного, 3 года в кабинете. Бумага — если едете не в плановый слот или акт не собрался.
+      - Перенос заказа на следующую отгрузку — не позже чем за 30 минут до отсечки. Позже только отмена.
+      - Доверительная приёмка: число мест + ярлыки палет, без пересчёта в СЦ.
+      - Опоздание / перенос / КГТ не в ту дату бьют по индексу качества.
+    methods:
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}"
+        title: Одна отгрузка
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/getShipment.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments"
+        title: Список отгрузок
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/searchShipments.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/confirm"
+        title: Подтвердить отгрузку
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/confirmShipment.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/shipments/reception-transfer-act"
+        title: Подтвердить ближайшую + акт
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/downloadShipmentReceptionTransferAct.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/act"
+        title: "Акт приёма-передачи"
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/downloadShipmentAct.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/discrepancy-act"
+        title: Акт расхождений
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/downloadShipmentDiscrepancyAct.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/transportation-waybill"
+        title: Транспортная накладная
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/downloadShipmentTransportationWaybill.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/inbound-act"
+        title: Фактический акт
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/downloadShipmentInboundAct.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/orders/transfer"
+        title: Перенести заказы в следующую отгрузку
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/transferOrdersFromShipment.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/pallets"
+        title: Число мест для доверительной приёмки
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/setShipmentPalletsCount.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/pallet/labels"
+        title: Ярлыки палет
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/downloadShipmentPalletLabels.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/orders/info"
+        title: Можно ли печатать ярлыки
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/getShipmentOrdersInfo.md
+    overlay_on:
+      - Кто возит first-mile
+      - Электронный акт vs бумага в 1С
+      - Слот отгрузки склада vs график ЯМ
+
+  - id: P-YM-ORDER-FAIL
+    title: Отмена, урезание, перенос заказа продавцом
+    wave: W1
+    graph_hint: F-ORDERS
+    required: true
+    ym_specifics:
+      - Полная отмена: CANCELLED + SHOP_FAILED. Обратно не вернуть.
+      - Выкинуть позицию: тот же PUT .../boxes. Не любой состав можно резать (чехол без телефона — нет).
+      - Перенос — отдельный метод отгрузки, бьёт по индексу так же, как опоздание.
+      - Делать часто нельзя: индекс, плата за отмену (от 150 ₽, потолок 5000 ₽), при индексе <40 магазин гаснет на 7 дней.
+    methods:
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/status"
+        title: Отмена SHOP_FAILED
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/updateOrderStatus.md
+      - verb: PUT
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/boxes"
+        title: Исключить товар из заказа
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders/setOrderBoxLayout.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/first-mile/shipments/{shipmentId}/orders/transfer"
+        title: Перенос в следующую отгрузку
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/shipments/transferOrdersFromShipment.md
+    note: PUT .../cancellation/accept — это DBS, не FBS.
+    overlay_on:
+      - Кто имеет право отменять заказ МП
+      - Как это уже сделано на Ozon
+
+  - id: P-YM-RETURN
+    title: Невыкупы и возвраты FBS
+    wave: W1
+    graph_hint: F-RETURNS
+    required: true
+    ym_specifics:
+      - Невыкуп (не забрали / отказались до получения) и возврат после получения — разные истории, один API-контур.
+      - По одному заказу бывает несколько возвратов (поштучно).
+      - Срок решения в доках расходится: API — 48 часов после заявления; справка FBS — 24 часа с принятия заявки, иначе автоодобрение денег покупателю (оспорить нельзя).
+      - После прибытия товара в ПВЗ/СЦ — 48 часов забрать и решить по деньгам.
+      - Покупатель может оспорить отказ за 72 часа → арбитраж 48 часов, решение окончательное.
+      - Если прозевали срок на заявке — Маркет подтверждает возврат сам.
+      - Покупатель может открыть спор (PREMODERATION_DISPUTE) и чат с арбитром.
+      - Частичный невыкуп: заказ остаётся DELIVERED, состав смотрится сравнением items заказа и items возврата.
+      - Быстрый возврат денег за дешёвый брак — флаг fastReturn, если опция включена.
+      - Стоимость заказа в getBusinessOrders не вычитает возвраты — для денег вычитать amount возврата.
+    methods:
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/returns"
+        title: Список невыкупов и возвратов
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/returns/getReturns.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/returns/{returnId}"
+        title: Один возврат
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/returns/getReturn.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/returns/{returnId}/application"
+        title: Заявление покупателя
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/returns/getReturnApplication.md
+      - verb: GET
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/returns/{returnId}/decision/{itemId}/image/{imageHash}"
+        title: Фото товара
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/returns/getReturnPhoto.md
+      - verb: POST
+        path: "/v1/businesses/{businessId}/returns/decisions"
+        title: Доступные решения
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/returns/getReturnAvailableDecisions.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/orders/{orderId}/returns/{returnId}/decision/submit"
+        title: Передать решение
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/returns/submitReturnDecision.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/chats/new"
+        title: Чат с покупателем
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/chats/createChat.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/returns.md
+    statuses: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/fby-fbs-express-return-status-model.md
+    overlay_on:
+      - Возврат клиента FBS на складе RULI
+      - SLA 48 часов vs смена склада
+      - Честный знак на возврате
+
+  - id: P-YM-QUALITY
+    title: Индекс качества FBS
+    wave: W1
+    graph_hint: F-ORDERS
+    required: true
+    integration: monitoring
+    ym_specifics:
+      - Число 0–100, видно только продавцу. Для FBS считается после 10 заказов за 30 дней.
+      - Ниже 40 — через сутки магазин гасится на 7 дней.
+      - Держать ≥98: не больше 4% не вовремя отгруженных и не больше 2% отмен по своей вине.
+      - Плата за отмену и опоздание зависит от индекса. Новым, пока индекса нет, считают как 98–100.
+      - ≥20% опозданий за 7 дней — Маркет может сломать график и отнять скидку за скорость.
+    methods:
+      - verb: POST
+        path: "/v2/businesses/{businessId}/ratings/quality"
+        title: Индекс магазинов кабинета
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/ratings/getQualityRatings.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/ratings/quality/details"
+        title: "Заказы, которые качнули индекс"
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/ratings/getQualityRatingDetails.md
+    support: https://yandex.ru/support/marketplace/ru/quality/score/fbs
+    overlay_on:
+      - Кто смотрит индекс в операционке
+      - Алерты на отмены и просрочку слота
+
+  - id: P-YM-SETTLEMENT
+    title: Взаиморасчёты, выплаты, закрывающие (отчёт агента)
+    wave: W3
+    graph_hint: null
+    required: false
+    charter_note: В INI/charter — новый процесс, согласовать. Не блокер первого заказа e2e.
+    ym_specifics:
+      - Маркет — агент. Счёт на услуги не выставляет: взаимозачёт из платежей покупателей.
+      - Отчёт комиссионера у Маркета называется отчётом агента (исполнение поручения и зачёт взаимных требований).
+      - Пакет за месяц (договор размещения): акт услуг, счёт-фактура, сводная статистика, отчёт агента. Первые 7 рабочих дней следующего месяца. Почта / ЭДО / кабинет.
+      - Основные услуги удерживаются из платежа по заказу; дополнительные — в начале следующего месяца.
+      - Выплата по графику (ежедневно или еженедельно с отсрочкой), не в конце отчётного периода. Поэтому в отчёте агента «подлежит перечислению» не равно «перечислено».
+      - Акт сверки в кабинете после 10 числа следующего месяца. API сверки нет.
+      - Scope токена finance-and-accounting.
+      - Ссылка на файл отчёта из API живёт 60 минут.
+    methods:
+      - verb: POST
+        path: "/v2/reports/closure-documents/generate"
+        title: ZIP закрывающих за месяц
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateClosureDocumentsReport.md
+      - verb: POST
+        path: "/v2/reports/closure-documents/detalization/generate"
+        title: Схождение с закрывающими
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateClosureDocumentsDetalizationReport.md
+      - verb: POST
+        path: "/v2/reports/united-netting/generate"
+        title: Отчёт по платежам / платёжке / баллам
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateUnitedNettingReport.md
+      - verb: POST
+        path: "/v2/reports/united-marketplace-services/generate"
+        title: Стоимость услуг
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateUnitedMarketplaceServicesReport.md
+      - verb: POST
+        path: "/v2/reports/goods-realization/generate"
+        title: Отчёт по реализации
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateGoodsRealizationReport.md
+      - verb: GET
+        path: "/v2/reports/info/{reportId}"
+        title: Забрать файл
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/getReportInfo.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/reports.md
+    support:
+      - https://yandex.ru/support/marketplace/ru/accounting/acts/main/
+      - https://yandex.ru/support/marketplace/ru/accounting/acts/main/agent
+      - https://yandex.ru/support/marketplace/ru/accounting/payment
+      - https://yandex.ru/support/marketplace/ru/accounting/mutual-settlement
+      - https://yandex.ru/support/marketplace/ru/accounting/transactions
+      - https://yandex.ru/legal/marketplace_service_agreement/#index__12_4
+    overlay_on:
+      - Как 1С разносит отчёт комиссионера Ozon vs отчёт агента ЯМ
+      - ЭДО или почта
+      - Какой график выплат в кабинете
+      - Кто гасит долг по ЛСМ, если покупательских платежей мало
+
+  - id: P-YM-CLAIMS
+    title: Претензии к Маркету и арбитраж по возврату
+    wave: W3
+    graph_hint: F-RETURNS
+    required: false
+    charter_note: Претензионная работа сверх клиентского возврата FBS — согласовать отдельно. Клиентский возврат — P-YM-RETURN.
+    ym_specifics:
+      - Подача претензии к Маркету в Partner API отсутствует. Кабинет, роль владельца кабинета/бизнеса.
+      - Одна претензия = один магазин, ≤10 заказов или ≤10 SKU. Рассмотрение до 35 рабочих дней.
+      - Спор покупателя по отказу — не претензия, а арбитраж в чате (48 часов, решение окончательное).
+      - "FBS — потеря в доставке 3 месяца; брак/недостача/кража при получении возврата часто 48 часов с акта; оспорить возврат денег — 30 дней с выдачи возврата."
+      - Расхождение при вывозе: фото в заявку за 48 часов, затем 30 дней на претензию.
+      - Компенсация FBS от объявленной ценности, 10–100%. Пересмотр 30 дней.
+      - Несогласие с актом услуг — обращение «Взаиморасчёты и документы», не тип претензии из списка.
+    methods:
+      - verb: POST
+        path: notification
+        title: События спора и возврата (наш endpoint)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/push-notifications/reference/sendNotification.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/chats/new"
+        title: Чат с покупателем
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/chats/createChat.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/chats"
+        title: Список чатов
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/chats/getChats.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/chats/history"
+        title: История чата (в т.ч. с арбитром)
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/chats/getChatHistory.md
+    cabinet_only:
+      - "Подать претензию — https://yandex.ru/support/marketplace/ru/communication/claims"
+    support:
+      - https://yandex.ru/support/marketplace/ru/orders/returns/fbs
+      - https://yandex.ru/legal/marketplace_service_agreement/#index__12_41
+      - https://yandex.ru/legal/marketplace_service_agreement/#index__12_5
+    overlay_on:
+      - Кто забирает возвраты и успевает сфотографировать расхождения
+      - Кто владелец кабинета для кнопки «Претензия»
+      - Как претензии к Ozon уже живут в 1С/поддержке
+
+  - id: P-YM-REPORT
+    title: Операционные и аналитические отчёты
+    wave: W2
+    graph_hint: null
+    required: false
+    ym_specifics:
+      - Почти все отчёты асинхронные: generate → GET reports/info/{reportId} → файл.
+      - Лимит одновременных генераций зависит от тарифа (подписка «Медиум» шире).
+      - Закрывающие и платежи вынесены в P-YM-SETTLEMENT.
+    methods:
+      - verb: GET
+        path: "/v2/reports/info/{reportId}"
+        title: Забрать готовый отчёт
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/getReportInfo.md
+      - verb: POST
+        path: "/v2/reports/united-orders/generate"
+        title: Отчёт по заказам
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateUnitedOrdersReport.md
+      - verb: POST
+        path: "/v2/reports/united-returns/generate"
+        title: Невыкупы и возвраты
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateUnitedReturnsReport.md
+      - verb: POST
+        path: "/v2/reports/shows-sales/generate"
+        title: Аналитика продаж
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/reports/generateShowsSalesReport.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/stats/orders"
+        title: Статистика заказов
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/orders-stats/getOrdersStats.md
+      - verb: POST
+        path: "/v2/campaigns/{campaignId}/stats/skus"
+        title: Статистика товаров
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/goods-stats/getGoodsStats.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/reports.md
+    overlay_on:
+      - Отчёты WA «как у Ozon» из INI-36
+
+  - id: P-YM-PROMO
+    title: Акции и буст
+    wave: later
+    required: false
+    methods:
+      - verb: POST
+        path: "/v2/businesses/{businessId}/promos"
+        title: Список акций
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/promos/getPromos.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/promos/offers"
+        title: Товары акции
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/promos/getPromoOffers.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/promos/offers/update"
+        title: Добавить в акцию / цену акции
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/promos/updatePromoOffers.md
+      - verb: POST
+        path: "/v2/businesses/{businessId}/promos/offers/delete"
+        title: Убрать из акции
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/promos/deletePromoOffers.md
+      - verb: PUT
+        path: "/v2/businesses/{businessId}/bids"
+        title: Буст продаж
+        url: https://yandex.ru/dev/market/partner-api/doc/ru/reference/bids/putBidsForBusiness.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/promos.md
+
+  - id: P-YM-CHAT
+    title: Чаты, отзывы, вопросы
+    wave: later
+    required: false
+    charter_note: Поддержка клиентов в волне 1 out of scope. Методы есть, если спор по возврату припрёт раньше.
+    how_to:
+      - https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/chats.md
+      - https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/goods-feedback.md
+      - https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/goods-questions.md
+
+  - id: P-YM-FBY
+    title: FBY / поставки на склад Маркета
+    wave: W3
+    required: false
+    charter_note: Out of scope волны 1. Не путать отгрузку FBS first-mile с заявками FBY.
+    overview: https://yandex.ru/dev/market/partner-api/doc/ru/overview/fby.md
+    how_to: https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/supplies.md

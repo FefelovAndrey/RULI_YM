@@ -16,7 +16,7 @@
 |-------|--------|------|----------------|
 | [meta/](meta/) | Логика организации repo (корректируемая) | `structure` `agents` | [FOLDER-LOGIC.md](meta/FOLDER-LOGIC.md) |
 | [context/](context/) | Context Pack: charter, системы, ограничения | `charter` `systems` | [00-charter.md](context/00-charter.md), [README](context/README.md) |
-| [research/](research/) | Исследования → AS IS, evidence, briefs | `as-is` `evidence` | [README](research/README.md), [reality-brief](research/briefs/reality-brief.md) |
+| [research/](research/) | Исследования → AS IS, evidence, briefs | `as-is` `evidence` | [README](research/README.md), [reality-brief](research/briefs/reality-brief.md), [карта ЯМ FBS](research/evidence/external/ym-fbs-battle-map.md) |
 | [decisions/](decisions/) | Options / ADR-лайт | `options` `ADR` | [README](decisions/README.md), [_template](decisions/_template.md) |
 | [graph/](graph/) | Граф проекта: узлы, рёбра, blast radius | `graph` `impact` | [graph.yaml](graph/graph.yaml), [graph.md](graph/graph.md) |
 | [features/](features/) | Feature PRD по итерациям | `PRD` `AC` | [STATUS.md](features/STATUS.md), [_template](features/_template/PRD.md) |
