@@ -3,7 +3,7 @@
 # Схема: schema.md | Логика repo: ../meta/FOLDER-LOGIC.md
 
 version: "0.1"
-updated: "2026-08-24"
+updated: "2026-09-01"
 tracker_project: null  # заполнить id проекта Tracker
 ini: null              # например INI-36
 
@@ -19,17 +19,21 @@ waves:
     status: planned
 
 nodes:
-  # --- decisions (заполнить после Options) ---
-  # - id: D-PUSH-VS-POLL
-  #   type: decision
-  #   status: open
-  #   title: Push vs poll для остатков/заказов
-  #   file: ../decisions/D-PUSH-VS-POLL.md
+  - id: D-YM-CARD-GEN
+    type: decision
+    status: open
+    title: Генерация карточек ЯМ по образцу Ozon/WB (WA)
+    file: ../decisions/D-YM-CARD-GEN.md
+  - id: D-YM-FULFILLMENT
+    type: decision
+    status: accepted
+    title: FBS-исполнение в WA (ym + clabels + rulimpsupplies)
+    file: ../decisions/D-YM-FULFILLMENT.md
 
   # --- capabilities ---
   - id: C-YM-API
     type: capability
-    status: planned
+    status: testing
     title: Интеграция с Yandex Market Partner API
     systems: [ym]
 
@@ -53,7 +57,7 @@ nodes:
     status: planned
     title: Каталог / маппинг атрибутов в ЯМ
     wave: W1-FOUNDATION
-    depends_on: [C-YM-API]
+    depends_on: [C-YM-API, D-YM-CARD-GEN]
     shares_entity: [E-OFFER]
   - id: F-PRICE-SYNC
     type: feature
@@ -71,11 +75,12 @@ nodes:
     shares_entity: [E-STOCK]
   - id: F-ORDERS
     type: feature
-    status: planned
+    status: specified
     title: Заказы (приём / статусы / отгрузка)
     wave: W2-CORE
-    depends_on: [C-YM-API, F-STOCK-SYNC]
+    depends_on: [C-YM-API, F-STOCK-SYNC, D-YM-FULFILLMENT]
     shares_entity: [E-ORDER]
+    file: ../features/F-ORDERS/PRD.md
   - id: F-RETURNS
     type: feature
     status: planned
@@ -101,6 +106,9 @@ edges:
   - from: F-ORDERS
     to: F-STOCK-SYNC
     type: depends_on
+  - from: F-ORDERS
+    to: D-YM-FULFILLMENT
+    type: depends_on
   - from: F-RETURNS
     to: F-ORDERS
     type: depends_on
@@ -120,3 +128,4 @@ edges:
 notes:
   - Скелет намеренный: уточнить узлы после research/ Reality Brief.
   - Не добавлять узел на каждую задачу Tracker — только сквозные стыки.
+  - 2026-09-01: sandbox FBS в WA пройден (заказ Маркета 61089913793 / Shop 2534310). Чеклист — research/briefs/fbs-test-2026-09-01.md; контракт — features/F-ORDERS/PRD.md. Повторно этот заказ не гонять.

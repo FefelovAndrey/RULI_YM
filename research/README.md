@@ -12,7 +12,9 @@
 
 | Путь | Содержание |
 |------|------------|
-| [as-is/](as-is/) | Процесс, карта систем, data readiness |
+| [as-is/fbs-fulfillment-wa.md](as-is/fbs-fulfillment-wa.md) | **Канон AS IS исполнения FBS в WA** (сборка / ярлык / SHIPPED) |
+| [briefs/fbs-test-2026-09-01.md](briefs/fbs-test-2026-09-01.md) | Прогон sandbox 2026-09-01 + **чеклист доработок** |
+| [as-is/](as-is/) | Прочее as-is (в т.ч. YMWB — вне скоупа) |
 | [evidence/](evidence/) | Сырьё: code, db, tracker, external |
 | [briefs/](briefs/) | Reality Brief, Open Questions |
 

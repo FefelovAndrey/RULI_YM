@@ -11,6 +11,7 @@
 |------|------------|
 | [STATUS.md](STATUS.md) | Сводка статусов |
 | [_template/PRD.md](_template/PRD.md) | Шаблон |
+| [F-ORDERS/PRD.md](F-ORDERS/PRD.md) | FBS: приём / сборка / ярлык / SHIPPED (после прогона 2026-09-01) |
 | `F-*/PRD.md` | Контракт фичи |
 
 Логика: [../meta/FOLDER-LOGIC.md](../meta/FOLDER-LOGIC.md)
