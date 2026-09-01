@@ -78,4 +78,4 @@ PUT **12:35:57** → `SHIPPED`. GET 12:36–12:40 подтвердили. Пов
 
 `shopYmApi`: OAuth + `.json` на path. На стенде 2026-09-01 ответы 200. Долг: Api-Key, URL без `.json`.
 
-Лог: `C:\wamp64\logs\query.17.log`. Паттерн `URL … NULL` = второй dump пустого тела, не обрыв HTTP.
+Лог: выжимка [fbs-test-2026-09-01-query17.md](../external/fbs-test-2026-09-01-query17.md). Паттерн `URL … NULL` = второй dump пустого тела, не обрыв HTTP.
