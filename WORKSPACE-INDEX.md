@@ -7,6 +7,7 @@
 - «Смотри `AGENTS.md` и `graph/`»
 - «Дополни AS IS в `research/`»
 - «Смотри прогон FBS: `research/briefs/fbs-test-2026-09-01.md`»
+- «Смотри витрину Postman: `research/briefs/postman-catalog-checklist.md`»
 - «Набросай скелет графа в `graph/graph.yaml`»
 - «Feature PRD для F-… по шаблону»
 - «Поправь логику папок в `meta/FOLDER-LOGIC.md`»

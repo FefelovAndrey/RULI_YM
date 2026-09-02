@@ -2,8 +2,7 @@
 
 Источник: [Список методов FBS](https://yandex.ru/dev/market/partner-api/doc/ru/overview/fbs)  
 Смежные: [Обработка FBS-заказов](https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/fbs), [Получение заказов](https://yandex.ru/dev/market/partner-api/doc/ru/step-by-step/orders-receive)  
-Снято: `2026-08-28`  
-Тип: `external` · не код RULI
+Снято: 2026-09-01, код `shopYmApi`. Канон вызовов плагина: [../code/wa-ym-partner-api.md](../code/wa-ym-partner-api.md).
 
 ## Модель
 

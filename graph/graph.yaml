@@ -3,7 +3,7 @@
 # Схема: schema.md | Логика repo: ../meta/FOLDER-LOGIC.md
 
 version: "0.1"
-updated: "2026-09-01"
+updated: "2026-09-02"
 tracker_project: null  # заполнить id проекта Tracker
 ini: null              # например INI-36
 
@@ -54,25 +54,28 @@ nodes:
   # --- features (скелет — уточнять после Reality Brief) ---
   - id: F-CATALOG
     type: feature
-    status: planned
+    status: specified
     title: Каталог / маппинг атрибутов в ЯМ
     wave: W1-FOUNDATION
     depends_on: [C-YM-API, D-YM-CARD-GEN]
     shares_entity: [E-OFFER]
+    file: ../features/F-CATALOG/PRD.md
   - id: F-PRICE-SYNC
     type: feature
-    status: planned
+    status: specified
     title: Синхронизация цен
     wave: W2-CORE
     depends_on: [C-YM-API, F-CATALOG]
     shares_entity: [E-OFFER]
+    file: ../features/F-PRICE-SYNC/PRD.md
   - id: F-STOCK-SYNC
     type: feature
-    status: planned
+    status: specified
     title: Синхронизация остатков
     wave: W2-CORE
     depends_on: [C-YM-API, F-CATALOG]
     shares_entity: [E-STOCK]
+    file: ../features/F-STOCK-SYNC/PRD.md
   - id: F-ORDERS
     type: feature
     status: specified
@@ -129,3 +132,4 @@ notes:
   - Скелет намеренный: уточнить узлы после research/ Reality Brief.
   - Не добавлять узел на каждую задачу Tracker — только сквозные стыки.
   - 2026-09-01: sandbox FBS в WA пройден (заказ Маркета 61089913793 / Shop 2534310). Чеклист — research/briefs/fbs-test-2026-09-01.md; контракт — features/F-ORDERS/PRD.md. Повторно этот заказ не гонять.
+  - 2026-09-02: Postman витрины SKU 1107932 (карточка/цена кабинета/остаток склада 1669219). Чеклист — research/briefs/postman-catalog-checklist.md; контракты — F-CATALOG / F-PRICE-SYNC / F-STOCK-SYNC.

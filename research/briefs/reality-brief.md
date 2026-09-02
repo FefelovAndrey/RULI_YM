@@ -13,6 +13,14 @@
 - Прогон + чеклист доработок: [fbs-test-2026-09-01.md](fbs-test-2026-09-01.md)
 - Якоря: [../evidence/code/wa-ym-fbs-pack.md](../evidence/code/wa-ym-fbs-pack.md)
 
+## Витрина (карточка / цена / остаток) — 2026-09-02
+
+Postman на SKU `1107932`: карточка и цена — **business 861370**; остаток — PUT campaign **137514772** / склад **1669219** при свежем `updatedAt`. Campaign-цена = `LOCKED`. Плагин `ym` цены шлёт на campaign; UI карточку ломает пустой hash.
+
+- Чеклист: [postman-catalog-checklist.md](postman-catalog-checklist.md)
+- AS IS: [../as-is/ym-catalog-price-stock-wa.md](../as-is/ym-catalog-price-stock-wa.md)
+- PRD: `F-CATALOG` / `F-PRICE-SYNC` / `F-STOCK-SYNC`
+
 ## YMWB (историческое, не AS IS RULI)
 
 Снято `2026-08-27` с [torsaf/YMWB](https://github.com/torsaf/YMWB). Не использовать как контур поставки.
