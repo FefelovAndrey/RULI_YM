@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ценообразование ЯМ — полный прототип (D-YM-PRICE-MGMT)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #e8ecf0;
+      --panel: #fff;
+      --ink: #1a1d21;
+      --muted: #5c6570;
+      --line: #d0d7de;
+      --accent: #fc0;
+      --accent-ink: #1a1a1a;
+      --ok: #0f7b3a;
+      --warn: #9a5b00;
+      --sidebar: #1e2227;
+      --sidebar-ink: #c5ccd4;
+      --focus: #2b6cb0;
+      --mono: "Cascadia Code", Consolas, ui-monospace, monospace;
+      --sans: "Manrope", "Segoe UI", system-ui, sans-serif;
+      --display: "Unbounded", "Manrope", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--bg); line-height: 1.45; }
+    .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 5; }
+    }
+    .sidebar { background: var(--sidebar); color: var(--sidebar-ink); padding: 18px 12px 28px; }
+    .sidebar .brand { color: var(--accent); font-weight: 700; font-size: 14px; margin-bottom: 14px; padding: 0 8px; }
+    .sidebar nav a {
+      display: block; color: inherit; text-decoration: none; padding: 7px 10px; border-radius: 6px; font-size: 12.5px;
+    }
+    .sidebar nav a:hover, .sidebar nav a.active { background: #323840; color: #fff; }
+    .sidebar .nav-sec { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #88919c; margin: 14px 8px 6px; }
+    .sidebar .nav-group { margin: 0; }
+    .sidebar .nav-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      width: 100%; font: inherit; cursor: pointer; border: 0; border-radius: 6px;
+      padding: 7px 10px; background: transparent; color: inherit; font-size: 12.5px;
+      font-weight: 600; text-align: left;
+    }
+    .sidebar .nav-toggle:hover, .sidebar .nav-group.open > .nav-toggle {
+      background: #323840; color: #fff;
+    }
+    .sidebar .nav-toggle .chev {
+      flex-shrink: 0; font-size: 10px; opacity: 0.7; transition: transform 0.15s ease;
+    }
+    .sidebar .nav-group.open > .nav-toggle .chev { transform: rotate(90deg); }
+    .sidebar .nav-sub {
+      display: none; padding: 2px 0 4px 8px; margin: 0 0 4px;
+    }
+    .sidebar .nav-group.open > .nav-sub { display: block; }
+    .sidebar .nav-sub a { padding: 6px 10px; font-size: 12px; color: #a8b0ba; }
+    .sidebar .nav-sub a:hover, .sidebar .nav-sub a.active { color: #fff; }
+    .main { padding: 28px 28px 56px; max-width: 1080px; }
+    .page-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px 24px;
+      margin: 0 0 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .page-kicker {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1.page-title {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(26px, 3.2vw, 34px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+    h1.page-title .ym-mark {
+      display: inline-block;
+      margin-left: 2px;
+      padding: 2px 10px 4px;
+      border-radius: 6px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+    }
+    .page-title-accent {
+      display: block;
+      width: 48px;
+      height: 3px;
+      margin-top: 12px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
+    .lead { color: var(--muted); font-size: 13.5px; margin: 0 0 12px; max-width: 72ch; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
+      background: #f6f8fa; color: var(--muted);
+    }
+    .badge.ym { background: #fff8cc; border-color: #e0c200; color: #5a4e00; }
+    .badge.full { background: #e8f5ee; border-color: #9dceb0; color: #0f7b3a; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; }
+    button {
+      font: inherit; cursor: pointer; border: 0; border-radius: 6px; padding: 8px 12px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 600;
+    }
+    button.secondary { background: #fff; border: 1px solid var(--line); color: var(--ink); font-weight: 500; }
+    button.primary-blue {
+      background: #2b6cb0;
+      color: #fff;
+      font-weight: 600;
+    }
+    button.primary-blue:hover { background: #245a96; }
+    button.ghost { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-weight: 500; padding: 4px 10px; font-size: 12px; }
+    button.danger { background: #fff; border: 1px solid #e8b4b0; color: #b42318; font-weight: 500; padding: 4px 8px; font-size: 12px; }
+    .sidebar .nav-toggle {
+      background: transparent;
+      color: inherit;
+      font-weight: 600;
+      padding: 7px 10px;
+      border-radius: 6px;
+    }
+    #toast { font-size: 12px; color: var(--ok); }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px; margin-bottom: 14px;
+    }
+    .card h2 { margin: 0 0 4px; font-size: 15px; }
+    .card .sub { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+    .field {
+      display: grid; grid-template-columns: 210px 1fr; gap: 8px 14px; padding: 9px 0;
+      border-top: 1px solid #eef1f4; align-items: start;
+    }
+    .field:first-of-type { border-top: 0; }
+    .field.field-below {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .field.field-below .name { padding-top: 0; }
+    @media (max-width: 720px) { .field { grid-template-columns: 1fr; } }
+    .field .name { font-size: 13px; font-weight: 600; padding-top: 7px; }
+    .field .hint { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; max-width: 440px; font: inherit; padding: 7px 9px;
+      border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    }
+    textarea { font-family: var(--mono); font-size: 12px; min-height: 56px; max-width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb, var(--focus) 35%, transparent); border-color: var(--focus); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .row input, .row select { max-width: 160px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: middle; }
+    th { background: #f2f5f8; font-weight: 600; }
+    .rules-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 10px 0 14px; }
+    @media (max-width: 800px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+    .stat { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fafbfc; }
+    .stat .lbl { font-size: 11px; color: var(--muted); }
+    .stat .val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+    .stat.ok .val { color: var(--ok); }
+    .stat.warn .val { color: var(--warn); }
+    .callout {
+      border-left: 3px solid #c9a400; background: #fffbeb; padding: 10px 12px;
+      font-size: 12.5px; color: #5c5200; border-radius: 0 8px 8px 0; margin-bottom: 14px;
+    }
+    .callout.omit { border-left-color: #aaa; background: #f4f5f6; color: var(--muted); }
+    .mono { font-family: var(--mono); font-size: 12px; }
+    .footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
+    .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+    .pill-out {
+      display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px;
+      background: #eceff2; color: #666; margin-left: 4px;
+    }
+    .leg-stack { display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+    .leg {
+      border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fafbfc;
+    }
+    .leg-title { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+    .leg-title .hint { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+    .leg-input {
+      display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted);
+    }
+    .leg-input .row { align-items: center; }
+    .leg > .row { gap: 28px; }
+    .mid-table { width: 100%; margin-top: 4px; }
+    .mid-table th { white-space: nowrap; }
+    .mid-table td { font-size: 12.5px; }
+    .mid-table input {
+      max-width: 72px; width: 72px; padding: 4px 6px; display: inline-block;
+    }
+    .mid-inline { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .pair-stack {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 440px;
+    }
+    @media (max-width: 720px) { .pair-stack { grid-template-columns: 1fr; } }
+    .pair-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fafbfc;
+    }
+    .pair-card .pair-k {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 2px;
+    }
+    .pair-card .pair-l {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 0 8px;
+      color: var(--ink);
+    }
+    .pair-card .pair-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pair-card input {
+      max-width: 110px;
+      width: 100%;
+    }
+    .pair-card .pair-unit {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .upload-panel {
+      max-width: 560px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbfc;
+      overflow: hidden;
+    }
+    .upload-zone {
+      padding: 16px 16px 14px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, #fff 0%, #fafbfc 100%);
+    }
+    .upload-zone-title {
+      margin: 0 0 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .upload-zone-hint {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .upload-pick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .upload-pick input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
+    }
+    .btn-file {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-file:hover { border-color: #b8c0c8; background: #f6f8fa; }
+    .file-name {
+      font-size: 12.5px;
+      color: var(--muted);
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-name.has-file { color: var(--ink); font-weight: 600; }
+    .upload-paste {
+      padding: 14px 16px 16px;
+    }
+    .upload-paste label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .upload-paste textarea {
+      max-width: 100%;
+      min-height: 88px;
+      background: #fff;
+    }
+    .upload-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .upload-footer .left, .upload-footer .right {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .sku-list {
+      margin-top: 12px;
+      max-height: 240px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      max-width: 560px;
+    }
+    .sku-list table { margin: 0; }
+    .sku-list th { position: sticky; top: 0; }
+    .sku-meta {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin: 8px 0 0;
+      max-width: 560px;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Яндекс Маркет · RULI</div>
+      <div class="nav-sec">Приложение ym</div>
+      <nav>
+        <div class="nav-group open" id="nav-pricing">
+          <button type="button" class="nav-toggle" aria-expanded="true" aria-controls="nav-pricing-sub">
+            Ценообразование
+            <span class="chev" aria-hidden="true">▸</span>
+          </button>
+          <div class="nav-sub" id="nav-pricing-sub">
+            <a href="#s1">1. Яндекс цена</a>
+            <a href="#s2">2. Тарифы FBS</a>
+            <a href="#s3">3. Прибыль M</a>
+            <a href="#s-excl">4. Список исключений</a>
+            <a href="#s5">5. Скидки</a>
+            <a href="#s6">6. Наценки</a>
+            <a href="#s8">7. Тест SKU</a>
+            <a href="#s9">8. Выгрузка на ЯМ</a>
+          </div>
+        </div>
+        <a href="ym-fee-categories.html">Комиссии по категориям</a>
+        <a href="ym-boost.html">Буст</a>
+      </nav>
+    </aside>
+
+    <main class="main" id="top">
+      <header class="page-header">
+        <div>
+          <p class="page-kicker">Яндекс Маркет · FBS</p>
+          <h1 class="page-title">Ценообразование <span class="ym-mark">ЯМ</span></h1>
+          <span class="page-title-accent" aria-hidden="true"></span>
+        </div>
+        <div class="toolbar">
+          <button type="button" id="btn-save">Сохранить настройки</button>
+          <button type="button" class="primary-blue" id="btn-recalc">Пересчитать</button>
+          <span id="toast"></span>
+        </div>
+      </header>
+
+      <!-- 1 -->
+      <section class="card" id="s1">
+        <h2>1. Цена витрины (ЯЦ)</h2>
+        <div class="field">
+          <div class="name">Формула расчета цены для ЯМ (ЯЦ)</div>
+          <div>
+            <textarea id="expr-pmin">(M + COGS + b - СКИДКА + НАЦЕНКА) / (1 - a)</textarea>
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">Цена Яндекса, если ПМ больше 1000 ₽<span class="hint">ветка при потолке LAST 1000 ₽ (P≳20 000)</span></div>
+          <div>
+            <textarea id="expr-pmin-lastcap">(M + COGS + MID + 25 + 0,12 + 1000 - СКИДКА + НАЦЕНКА) / (1 - fee% - xfer - boost)</textarea>
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">Минимальная цена для Яндекса, ₽</div>
+          <div><input type="number" id="p-floor" value="0" min="0" step="1" /></div>
+        </div>
+        <div class="field">
+          <div class="name">Округление P, ₽<span class="hint">0 = без округления</span></div>
+          <div><input type="number" id="round-mode" value="10" min="0" step="1" /></div>
+        </div>
+      </section>
+
+      <!-- 2 -->
+      <section class="card" id="s2">
+        <h2>2. Тарифы ЯМ FBS</h2>
+        <div class="field">
+          <div class="name">К<span class="hint">(размещение по умолчанию)</span></div>
+          <div class="row">
+            <input type="number" id="fee-custom" value="46" step="0.1" style="max-width:120px" /> <span>%</span>
+          </div>
+        </div>
+        <div class="field field-below">
+          <div class="name">Плечо доставки</div>
+          <div class="leg-stack">
+            <div class="leg">
+              <div class="leg-title">ПМ — первая миля<span class="hint">Доставка в ПВЗ</span></div>
+              <div class="row">
+                <div class="leg-input">
+                  <span>Процент от цены товара</span>
+                  <div class="row">
+                    <input type="number" id="pm-first" value="0" min="0" step="0.1" style="max-width:120px" /> <span>%</span>
+                  </div>
+                </div>
+                <div class="leg-input">
+                  <span>Но не более</span>
+                  <div class="row">
+                    <input type="number" id="pm-first-rub" value="0" min="0" step="1" style="max-width:120px" /> <span>₽</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="leg">
+              <div class="leg-title">СМ — средняя миля<span class="hint">тариф по объёму · ввод вручную</span></div>
+              <p class="sub" style="margin:0 0 8px">локально (тот же населенный пункт) — СМ = 0 ₽</p>
+              <table class="mid-table">
+                <thead>
+                  <tr><th>Объём товара, л</th><th>Тариф</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>до 1 л включительно</td>
+                    <td>
+                      <span class="mid-inline"><input type="number" id="mid-base" value="92" min="0" step="1" /> ₽</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>от 1,001 л до 200 л включительно</td>
+                    <td>
+                      <span class="mid-inline">
+                        <span id="mid-base-ref">92</span> ₽ + по
+                        <input type="number" id="mid-rate1" value="8" min="0" step="1" /> ₽
+                        за каждый литр сверх 1 л
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>от 200,001 л и больше</td>
+                    <td>
+                      <span class="mid-inline">
+                        <span id="mid-base-ref2">92</span> ₽ + по
+                        <span id="mid-rate1-ref">8</span> ₽ сверх 1 л + по
+                        <input type="number" id="mid-rate2" value="5" min="0" step="1" /> ₽
+                        сверх 200 л
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="row" style="margin-top:10px">
+                <label>Потолок СМ <input type="number" id="mid-cap" value="5500" min="0" step="1" style="max-width:100px" /> ₽</label>
+                <span class="mono" id="mid-calc-hint"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field field-below">
+          <div class="name">П+ Э<span class="hint">(Прием + эквайринг)</span></div>
+          <div class="pair-stack">
+            <div class="pair-card">
+              <div class="pair-k">П</div>
+              <div class="pair-l">Приём</div>
+              <div class="pair-row">
+                <input type="number" id="sort" value="25" min="0" step="1" />
+                <span class="pair-unit">₽</span>
+              </div>
+            </div>
+            <div class="pair-card">
+              <div class="pair-k">Э</div>
+              <div class="pair-l">Эквайринг</div>
+              <div class="pair-row">
+                <input type="number" id="agency" value="0.12" min="0" step="0.01" />
+                <span class="pair-unit">₽</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 -->
+      <section class="card" id="s3">
+        <h2>3. Целевая прибыль M</h2>
+        <div class="field">
+          <div class="name">M по умолчанию, ₽<span class="hint">(если РЦ&lt;ЗЦ данное условие не формируется)</span></div>
+          <div><input type="number" id="m-default" value="100" min="0" /></div>
+        </div>
+        <div class="field">
+          <div class="name">M по виду</div>
+          <div>
+            <table>
+              <thead><tr><th>Вид (part)</th><th>M, ₽</th><th></th></tr></thead>
+              <tbody id="m-part-body"></tbody>
+            </table>
+            <div class="rules-actions">
+              <button type="button" class="ghost" id="add-m-part">+ по виду</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="s-excl">
+        <h2>4. Список исключений для продажи на яндекс маркете</h2>
+        <div class="field field-below">
+          <div class="name">Список SKU</div>
+          <div>
+            <div class="upload-panel">
+              <div class="upload-zone">
+                <p class="upload-zone-title">Загрузить из файла</p>
+                <p class="upload-zone-hint">Поддерживаются txt и csv. Один артикул в строке или через точку с запятой / запятую.</p>
+                <div class="upload-pick">
+                  <input type="file" id="excl-file" accept=".txt,.csv,text/plain,text/csv" />
+                  <label for="excl-file" class="btn-file">Выбрать файл</label>
+                  <span class="file-name" id="excl-file-name">Файл не выбран</span>
+                </div>
+              </div>
+              <div class="upload-paste">
+                <label for="excl-paste">Или вставить список вручную</label>
+                <textarea id="excl-paste" placeholder="Например:&#10;ABC-1001&#10;ABC-1002&#10;XYZ-55"></textarea>
+                <div class="upload-footer">
+                  <div class="left">
+                    <button type="button" class="primary-blue" id="excl-apply">Применить список</button>
+                    <button type="button" class="ghost" id="excl-clear">Очистить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sku-meta" id="excl-meta">В списке: 0 позиций</div>
+            <div class="sku-list" id="excl-list-wrap" hidden>
+              <table>
+                <thead><tr><th>№</th><th>Артикул (SKU)</th><th></th></tr></thead>
+                <tbody id="excl-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 скидки -->
+      <section class="card" id="s5">
+        <h2>5. Скидки (СК)</h2>
+        <div class="field">
+          <div class="name">Скидка база, ₽</div>
+          <div><input type="number" id="sk-base" value="0" min="0" /></div>
+        </div>
+        <div class="field">
+          <div class="name">Скидка по бренду<span class="hint">(СКБ)</span></div>
+          <div>
+            <table>
+              <thead><tr><th>Бренд</th><th>Скидка, ₽</th><th></th></tr></thead>
+              <tbody id="skb-body"></tbody>
+            </table>
+            <button type="button" class="ghost" id="add-skb">+ СКБ</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">Скидка по виду<span class="hint">(СКТ)</span></div>
+          <div>
+            <table>
+              <thead><tr><th>Вид</th><th>Скидка, ₽</th><th></th></tr></thead>
+              <tbody id="skt-body"></tbody>
+            </table>
+            <button type="button" class="ghost" id="add-skt">+ СКТ</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">СКИДКА (правила)</div>
+          <div>
+            <table>
+              <thead><tr><th>Тип</th><th>Ключ</th><th>Скидка, ₽</th><th></th></tr></thead>
+              <tbody id="discount-body"></tbody>
+            </table>
+            <div class="rules-actions">
+              <button type="button" class="ghost" data-add-discount="brand">+ бренд</button>
+              <button type="button" class="ghost" data-add-discount="part">+ вид</button>
+              <button type="button" class="ghost" data-add-discount="set">+ цена</button>
+              <button type="button" class="ghost" data-add-discount="brand_part">+ бренд+вид</button>
+              <button type="button" class="ghost" data-add-discount="part_set">+ вид+цена</button>
+              <button type="button" class="ghost" data-add-discount="brand_part_set">+ бренд+вид+цена</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 наценки -->
+      <section class="card" id="s6">
+        <h2>6. Наценки (НАЦЕНКА)</h2>
+        <div class="field">
+          <div class="name">НАЦЕНКА (правила)</div>
+          <div>
+            <table>
+              <thead><tr><th>Тип</th><th>Ключ</th><th>Наценка, ₽</th><th></th></tr></thead>
+              <tbody id="markup-body"></tbody>
+            </table>
+            <div class="rules-actions">
+              <button type="button" class="ghost" data-add-markup="brand">+ бренд</button>
+              <button type="button" class="ghost" data-add-markup="part">+ вид</button>
+              <button type="button" class="ghost" data-add-markup="set">+ цена</button>
+              <button type="button" class="ghost" data-add-markup="brand_part">+ бренд+вид</button>
+              <button type="button" class="ghost" data-add-markup="part_set">+ вид+цена</button>
+              <button type="button" class="ghost" data-add-markup="brand_part_set">+ бренд+вид+цена</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8 тест -->
+      <section class="card" id="s8">
+        <h2>7. Тест расчёта SKU</h2>
+        <div class="field">
+          <div class="name">SKU<span class="hint">артикул для проверки расчёта</span></div>
+          <div>
+            <input type="text" id="sku-code" value="ABC-1001" placeholder="Введите SKU" style="max-width:280px" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">ЗЦ, ₽<span class="hint">(закупочная цена)</span></div>
+          <div>
+            <input type="number" id="cogs" value="460" step="0.01" style="max-width:160px" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">P на витрине (проверка)</div>
+          <div><input type="number" id="price" value="1300" step="1" style="max-width:140px" /></div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat"><div class="lbl">M</div><div class="val" id="out-m">—</div></div>
+          <div class="stat"><div class="lbl">ЯЦ → P</div><div class="val" id="out-pmin">—</div></div>
+          <div class="stat"><div class="lbl">Удержания @ P</div><div class="val" id="out-ret">—</div></div>
+          <div class="stat" id="stat-profit"><div class="lbl">Прибыль @ P</div><div class="val" id="out-profit">—</div></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Статья</th><th>₽ / значение</th></tr></thead>
+          <tbody id="break-body"></tbody>
+        </table>
+      </section>
+
+      <!-- 9 -->
+      <section class="card" id="s9">
+        <h2>8. Выгрузка на яндекс маркет</h2>
+        <div class="field field-below">
+          <div class="name">Список SKU</div>
+          <div>
+            <div class="upload-panel">
+              <div class="upload-zone">
+                <p class="upload-zone-title">Загрузить из файла</p>
+                <p class="upload-zone-hint">Поддерживаются txt и csv. Один артикул в строке или через точку с запятой / запятую.</p>
+                <div class="upload-pick">
+                  <input type="file" id="push-file" accept=".txt,.csv,text/plain,text/csv" />
+                  <label for="push-file" class="btn-file">Выбрать файл</label>
+                  <span class="file-name" id="push-file-name">Файл не выбран</span>
+                </div>
+              </div>
+              <div class="upload-paste">
+                <label for="push-paste">Или вставить список вручную</label>
+                <textarea id="push-paste" placeholder="Например:&#10;ABC-1001&#10;ABC-1002&#10;XYZ-55"></textarea>
+                <div class="upload-footer">
+                  <div class="left">
+                    <button type="button" class="primary-blue" id="push-apply">Применить список</button>
+                    <button type="button" class="primary-blue" id="push-send">Выгрузить на ЯМ</button>
+                    <button type="button" class="ghost" id="push-clear">Очистить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sku-meta" id="push-meta">В списке: 0 позиций</div>
+            <div class="sku-list" id="push-list-wrap" hidden>
+              <table>
+                <thead><tr><th>№</th><th>Артикул (SKU)</th><th></th></tr></thead>
+                <tbody id="push-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const PARTS = [
+      { id: "filters", label: "Салонные фильтры" },
+      { id: "lights", label: "Фары" },
+    ];
+    const BRANDS = [
+      { id: "stellox", label: "STELLOX" },
+      { id: "bosch", label: "BOSCH" },
+      { id: "premium", label: "PremiumBrand" },
+    ];
+    const SETS = [
+      { id: "yandex-1", label: "yandex-1" },
+      { id: "ym-promo", label: "ym-promo" },
+    ];
+    const STOCKS = [
+      { id: "msk", label: "Москва" },
+      { id: "spb", label: "СПб" },
+    ];
+
+    const state = {
+      mPart: [{ part: "filters", value: 100 }, { part: "lights", value: 150 }],
+      skb: [{ brand: "bosch", value: 20 }],
+      skt: [],
+      discounts: [
+        { type: "brand", key: "stellox", value: 0 },
+        { type: "set", key: "ym-promo", value: 30 },
+      ],
+      markups: [
+        { type: "part", key: "lights", value: 40 },
+        { type: "set", key: "yandex-1", value: 0 },
+      ],
+      nc: [],
+      exclusions: [],
+      pushSkus: [],
+    };
+
+    function $(id) { return document.getElementById(id); }
+    function num(id) {
+      const v = Number(String($(id).value).replace(",", "."));
+      return Number.isFinite(v) ? v : 0;
+    }
+    function round2(n) { return Math.round(n * 100) / 100; }
+
+    function optList(list, selected) {
+      return list.map((x) => `<option value="${x.id}" ${x.id === selected ? "selected" : ""}>${x.label}</option>`).join("");
+    }
+
+    function renderKeyRows(tbodyId, rows, kind) {
+      const tb = $(tbodyId);
+      tb.innerHTML = rows.map((r, i) => {
+        let keyCell = "";
+        if (kind === "part") keyCell = `<select data-i="${i}" data-f="part">${optList(PARTS, r.part)}</select>`;
+        if (kind === "brand") keyCell = `<select data-i="${i}" data-f="brand">${optList(BRANDS, r.brand)}</select>`;
+        if (kind === "stock") keyCell = `<select data-i="${i}" data-f="stock">${optList(STOCKS, r.stock)}</select>`;
+        return `<tr>
+          <td>${keyCell}</td>
+          <td><input type="number" step="0.01" data-i="${i}" data-f="value" value="${r.value}" style="max-width:100px" /></td>
+          <td><button type="button" class="danger" data-del="${i}">×</button></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function renderTypedRules(tbodyId, rows) {
+      const tb = $(tbodyId);
+      const typeLabel = {
+        brand: "бренд",
+        part: "вид",
+        brand_part: "бренд+вид",
+        set: "цена",
+        part_set: "вид+цена",
+        brand_part_set: "бренд+вид+цена",
+      };
+      tb.innerHTML = rows.map((r, i) => {
+        let key = "";
+        if (r.type === "brand") key = `<select data-i="${i}" data-f="key">${optList(BRANDS, r.key)}</select>`;
+        else if (r.type === "part") key = `<select data-i="${i}" data-f="key">${optList(PARTS, r.key)}</select>`;
+        else if (r.type === "set") key = `<select data-i="${i}" data-f="key">${optList(SETS, r.key)}</select>`;
+        else if (r.type === "brand_part") {
+          const [b, p] = (r.key || "stellox|filters").split("|");
+          key = `<span class="row">
+            <select data-i="${i}" data-f="keyBrand">${optList(BRANDS, b)}</select>
+            <select data-i="${i}" data-f="keyPart">${optList(PARTS, p)}</select>
+          </span>`;
+        } else if (r.type === "part_set") {
+          const [p, s] = (r.key || "filters|yandex-1").split("|");
+          key = `<span class="row">
+            <select data-i="${i}" data-f="keyPart">${optList(PARTS, p)}</select>
+            <select data-i="${i}" data-f="keySet">${optList(SETS, s)}</select>
+          </span>`;
+        } else if (r.type === "brand_part_set") {
+          const [b, p, s] = (r.key || "stellox|filters|yandex-1").split("|");
+          key = `<span class="row">
+            <select data-i="${i}" data-f="keyBrand">${optList(BRANDS, b)}</select>
+            <select data-i="${i}" data-f="keyPart">${optList(PARTS, p)}</select>
+            <select data-i="${i}" data-f="keySet">${optList(SETS, s)}</select>
+          </span>`;
+        }
+        return `<tr>
+          <td>${typeLabel[r.type] || r.type}</td>
+          <td>${key}</td>
+          <td><input type="number" step="0.01" data-i="${i}" data-f="value" value="${r.value}" style="max-width:100px" /></td>
+          <td><button type="button" class="danger" data-del="${i}">×</button></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function bindSimpleTable(tbodyId, arrName, kind) {
+      const tb = $(tbodyId);
+      tb.onchange = (e) => {
+        const t = e.target;
+        const i = +t.dataset.i;
+        if (t.dataset.f === "value") state[arrName][i].value = Number(t.value) || 0;
+        else state[arrName][i][t.dataset.f] = t.value;
+        calc();
+      };
+      tb.onclick = (e) => {
+        if (e.target.dataset.del != null) {
+          state[arrName].splice(+e.target.dataset.del, 1);
+          refreshRules();
+          calc();
+        }
+      };
+    }
+
+    function bindTypedTable(tbodyId, arrName) {
+      const tb = $(tbodyId);
+      tb.onchange = (e) => {
+        const t = e.target;
+        const i = +t.dataset.i;
+        const row = state[arrName][i];
+        if (t.dataset.f === "value") row.value = Number(t.value) || 0;
+        else if (t.dataset.f === "key") row.key = t.value;
+        else if (t.dataset.f === "keyBrand" || t.dataset.f === "keyPart" || t.dataset.f === "keySet") {
+          if (row.type === "brand_part") {
+            const brand = tb.querySelector(`select[data-i="${i}"][data-f="keyBrand"]`).value;
+            const part = tb.querySelector(`select[data-i="${i}"][data-f="keyPart"]`).value;
+            row.key = brand + "|" + part;
+          } else if (row.type === "part_set") {
+            const part = tb.querySelector(`select[data-i="${i}"][data-f="keyPart"]`).value;
+            const set = tb.querySelector(`select[data-i="${i}"][data-f="keySet"]`).value;
+            row.key = part + "|" + set;
+          } else if (row.type === "brand_part_set") {
+            const brand = tb.querySelector(`select[data-i="${i}"][data-f="keyBrand"]`).value;
+            const part = tb.querySelector(`select[data-i="${i}"][data-f="keyPart"]`).value;
+            const set = tb.querySelector(`select[data-i="${i}"][data-f="keySet"]`).value;
+            row.key = brand + "|" + part + "|" + set;
+          }
+        }
+        calc();
+      };
+      tb.onclick = (e) => {
+        if (e.target.dataset.del != null) {
+          state[arrName].splice(+e.target.dataset.del, 1);
+          refreshRules();
+          calc();
+        }
+      };
+    }
+
+    function parseSkuList(text) {
+      const raw = String(text || "")
+        .split(/[\n\r;,\t]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const seen = new Set();
+      const out = [];
+      for (const s of raw) {
+        const key = s.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(s);
+      }
+      return out;
+    }
+
+    function renderExclusions() {
+      const tb = $("excl-body");
+      const wrap = $("excl-list-wrap");
+      const meta = $("excl-meta");
+      const rows = state.exclusions;
+      meta.textContent = rows.length
+        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}`
+        : "В списке: 0 позиций";
+      wrap.hidden = rows.length === 0;
+      tb.innerHTML = rows.map((sku, i) => `<tr>
+        <td class="mono">${i + 1}</td>
+        <td class="mono">${sku}</td>
+        <td><button type="button" class="danger" data-del="${i}" title="Удалить">×</button></td>
+      </tr>`).join("");
+    }
+
+    function setExclusions(list) {
+      state.exclusions = list;
+      renderExclusions();
+      toast(list.length ? `Загружено артикулов: ${list.length}` : "Список очищен");
+    }
+
+    function renderPushSkus() {
+      const tb = $("push-body");
+      const wrap = $("push-list-wrap");
+      const meta = $("push-meta");
+      const rows = state.pushSkus;
+      meta.textContent = rows.length
+        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}`
+        : "В списке: 0 позиций";
+      wrap.hidden = rows.length === 0;
+      tb.innerHTML = rows.map((sku, i) => `<tr>
+        <td class="mono">${i + 1}</td>
+        <td class="mono">${sku}</td>
+        <td><button type="button" class="danger" data-del="${i}" title="Удалить">×</button></td>
+      </tr>`).join("");
+    }
+
+    function setPushSkus(list) {
+      state.pushSkus = list;
+      renderPushSkus();
+      toast(list.length ? `К выгрузке: ${list.length}` : "Список выгрузки очищен");
+    }
+
+    function refreshRules() {
+      renderKeyRows("m-part-body", state.mPart, "part");
+      renderKeyRows("skb-body", state.skb, "brand");
+      renderKeyRows("skt-body", state.skt, "part");
+      renderTypedRules("discount-body", state.discounts);
+      renderTypedRules("markup-body", state.markups);
+      renderExclusions();
+      renderPushSkus();
+    }
+
+    function syncMidLabels() {
+      const base = num("mid-base");
+      const r1 = num("mid-rate1");
+      $("mid-base-ref").textContent = String(base);
+      $("mid-base-ref2").textContent = String(base);
+      $("mid-rate1-ref").textContent = String(r1);
+    }
+
+    function midFromLiters(L) {
+      const t1 = 1;
+      const t2 = 200;
+      const base = num("mid-base");
+      const r1 = num("mid-rate1");
+      const r2 = num("mid-rate2");
+      const cap = num("mid-cap") || 5500;
+      const liters = Math.max(t1, Math.ceil(L));
+      let mid = base;
+      if (liters > t1) mid += r1 * Math.min(liters - t1, Math.max(0, t2 - t1));
+      if (liters > t2) mid += r2 * (liters - t2);
+      return Math.min(mid, cap);
+    }
+
+    function resolveMid() {
+      const L = 1;
+      return midFromLiters(L);
+    }
+
+    function pickRuleValue(rows, pred) {
+      let best = 0;
+      for (const r of rows) if (pred(r)) best = Math.max(best, Number(r.value) || 0);
+      return best;
+    }
+
+    function matchTyped(rows, type, brand, part, setId) {
+      let sum = 0;
+      for (const r of rows) {
+        if (r.type !== type) continue;
+        if (type === "brand" && r.key === brand) sum += Number(r.value) || 0;
+        if (type === "part" && r.key === part) sum += Number(r.value) || 0;
+        if (type === "set" && r.key === setId) sum += Number(r.value) || 0;
+        if (type === "brand_part" && r.key === brand + "|" + part) sum += Number(r.value) || 0;
+        if (type === "part_set" && r.key === part + "|" + setId) sum += Number(r.value) || 0;
+        if (type === "brand_part_set" && r.key === brand + "|" + part + "|" + setId) sum += Number(r.value) || 0;
+      }
+      return sum;
+    }
+
+    function feePct() {
+      return num("fee-custom") / 100;
+    }
+
+    function calc() {
+      const part = "filters";
+      const brand = "stellox";
+      const setId = "yandex-1";
+      const C = num("cogs");
+      const P = num("price");
+      const liters = 1;
+
+      let M = num("m-default");
+      const mRow = state.mPart.find((r) => r.part === part);
+      if (mRow) M = Number(mRow.value) || M;
+
+      const skBase = num("sk-base");
+      const skb = pickRuleValue(state.skb, (r) => r.brand === brand);
+      const skt = pickRuleValue(state.skt, (r) => r.part === part);
+      let discount =
+        skBase +
+        skb +
+        skt +
+        matchTyped(state.discounts, "brand", brand, part, setId) +
+        matchTyped(state.discounts, "part", brand, part, setId) +
+        matchTyped(state.discounts, "brand_part", brand, part, setId) +
+        matchTyped(state.discounts, "set", brand, part, setId) +
+        matchTyped(state.discounts, "part_set", brand, part, setId) +
+        matchTyped(state.discounts, "brand_part_set", brand, part, setId);
+
+      let markup =
+        matchTyped(state.markups, "brand", brand, part, setId) +
+        matchTyped(state.markups, "part", brand, part, setId) +
+        matchTyped(state.markups, "brand_part", brand, part, setId) +
+        matchTyped(state.markups, "set", brand, part, setId) +
+        matchTyped(state.markups, "part_set", brand, part, setId) +
+        matchTyped(state.markups, "brand_part_set", brand, part, setId);
+
+      const mid = resolveMid();
+      const pmPct = num("pm-first") / 100;
+      const pmCap = num("pm-first-rub");
+      const sort = num("sort");
+      const agency = num("agency");
+      const xfer = 0;
+      const boost = 0;
+      const fee = feePct();
+
+      const risk = 0;
+      const pmThresh = pmPct > 0 && pmCap > 0 ? pmCap / pmPct : Infinity;
+      const b = mid + sort + agency + risk;
+
+      const cheapForMin = false;
+      const floor = num("p-floor");
+      let a = cheapForMin ? 0.42 + xfer + boost + pmPct : fee + 0.05 + xfer + boost + pmPct;
+      let bUsed = b;
+      let pMin = a >= 1 ? NaN : (M + C + bUsed - discount + markup) / (1 - a);
+      if (!cheapForMin && Number.isFinite(pMin) && pMin > 20000) {
+        a = fee + xfer + boost + pmPct;
+        bUsed = b + 1000;
+        pMin = a >= 1 ? NaN : (M + C + bUsed - discount + markup) / (1 - a);
+      }
+      if (Number.isFinite(pMin) && pMin > pmThresh) {
+        a -= pmPct;
+        bUsed += pmCap;
+        pMin = a >= 1 ? NaN : (M + C + bUsed - discount + markup) / (1 - a);
+      }
+      if (Number.isFinite(pMin)) {
+        if (floor > 0) pMin = Math.max(pMin, floor);
+        const rm = Number($("round-mode").value);
+        if (rm > 0) pMin = Math.ceil(pMin / rm) * rm;
+        pMin = round2(pMin);
+      }
+
+      // direct at P
+      const useCheap = P <= 300 && liters <= 5;
+      let feeRub, last, midAmt, aP;
+      const pmRub = round2(pmCap > 0 && pmPct > 0 ? Math.min(P * pmPct, pmCap) : P * pmPct);
+      if (useCheap) {
+        aP = 0.42 + xfer + boost + pmPct;
+        feeRub = round2(P * 0.42);
+        last = 0;
+        midAmt = 0;
+      } else {
+        last = P > 20000 ? 1000 : Math.min(P * 0.05, 1000);
+        midAmt = mid;
+        feeRub = round2(P * fee);
+        aP = fee + (P > 20000 ? 0 : 0.05) + xfer + boost + pmPct;
+      }
+      const xferRub = round2(P * xfer);
+      const boostRub = round2(P * boost);
+      const ret = useCheap
+        ? round2(aP * P + (sort + agency + risk))
+        : round2(feeRub + last + pmRub + midAmt + sort + agency + xferRub + boostRub + risk);
+      const profit = round2(P - ret - C);
+
+      $("out-m").textContent = round2(M).toFixed(0) + " ₽";
+      $("out-pmin").textContent = Number.isFinite(pMin) ? pMin.toFixed(0) + " ₽" : "—";
+      $("out-ret").textContent = ret.toFixed(2) + " ₽";
+      $("out-profit").textContent = profit.toFixed(2) + " ₽";
+      $("stat-profit").className = "stat " + (profit >= M - 0.5 ? "ok" : "warn");
+
+      const rows = [
+        ["К", feeRub],
+        ["Доставка покупателю", round2(last)],
+        ["ПМ", useCheap ? 0 : pmRub],
+        ["СМ", midAmt],
+        ["П (приём)", round2(sort)],
+        ["Э (эквайринг)", round2(agency)],
+        ["Скидка", round2(discount)],
+        ["Наценка", round2(markup)],
+        ["Удержания", ret],
+        ["ЗЦ (закупочная цена)", C],
+        ["M (целевая прибыль)", round2(M)],
+        ["Прибыль", profit],
+      ];
+      $("break-body").innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td>${Number(v).toFixed(2)}</td></tr>`).join("");
+
+      syncMidLabels();
+      const Lshow = 1;
+      $("mid-calc-hint").textContent = `→ СМ ${midFromLiters(Lshow)} ₽`;
+    }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      setTimeout(() => { $("toast").textContent = ""; }, 2800);
+    }
+
+    // init UI
+    refreshRules();
+    bindSimpleTable("m-part-body", "mPart", "part");
+    bindSimpleTable("skb-body", "skb", "brand");
+    bindSimpleTable("skt-body", "skt", "part");
+    bindTypedTable("discount-body", "discounts");
+    bindTypedTable("markup-body", "markups");
+
+    {
+      const tb = $("excl-body");
+      tb.onclick = (e) => {
+        if (e.target.dataset.del != null) {
+          state.exclusions.splice(+e.target.dataset.del, 1);
+          renderExclusions();
+        }
+      };
+    }
+
+    $("excl-file").onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      const nameEl = $("excl-file-name");
+      if (!file) {
+        nameEl.textContent = "Файл не выбран";
+        nameEl.classList.remove("has-file");
+        return;
+      }
+      nameEl.textContent = file.name;
+      nameEl.classList.add("has-file");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const list = parseSkuList(reader.result);
+        $("excl-paste").value = list.join("\n");
+        setExclusions(list);
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+    $("excl-apply").onclick = () => setExclusions(parseSkuList($("excl-paste").value));
+    $("excl-clear").onclick = () => {
+      $("excl-paste").value = "";
+      $("excl-file").value = "";
+      const nameEl = $("excl-file-name");
+      nameEl.textContent = "Файл не выбран";
+      nameEl.classList.remove("has-file");
+      setExclusions([]);
+    };
+
+    {
+      const tb = $("push-body");
+      tb.onclick = (e) => {
+        if (e.target.dataset.del != null) {
+          state.pushSkus.splice(+e.target.dataset.del, 1);
+          renderPushSkus();
+        }
+      };
+    }
+
+    $("push-file").onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      const nameEl = $("push-file-name");
+      if (!file) {
+        nameEl.textContent = "Файл не выбран";
+        nameEl.classList.remove("has-file");
+        return;
+      }
+      nameEl.textContent = file.name;
+      nameEl.classList.add("has-file");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const list = parseSkuList(reader.result);
+        $("push-paste").value = list.join("\n");
+        setPushSkus(list);
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+    $("push-apply").onclick = () => setPushSkus(parseSkuList($("push-paste").value));
+    $("push-clear").onclick = () => {
+      $("push-paste").value = "";
+      $("push-file").value = "";
+      const nameEl = $("push-file-name");
+      nameEl.textContent = "Файл не выбран";
+      nameEl.classList.remove("has-file");
+      setPushSkus([]);
+    };
+    $("push-send").onclick = () => {
+      if (!state.pushSkus.length) {
+        toast("Сначала добавьте SKU в список");
+        return;
+      }
+      toast(`Mock: выгрузка ${state.pushSkus.length} SKU на Яндекс Маркет`);
+    };
+
+    $("add-m-part").onclick = () => { state.mPart.push({ part: "filters", value: 100 }); refreshRules(); calc(); };
+    $("add-skb").onclick = () => { state.skb.push({ brand: "stellox", value: 10 }); refreshRules(); calc(); };
+    $("add-skt").onclick = () => { state.skt.push({ part: "filters", value: 10 }); refreshRules(); calc(); };
+
+    document.querySelectorAll("[data-add-discount]").forEach((btn) => {
+      btn.onclick = () => {
+        const type = btn.dataset.addDiscount;
+        let key = "stellox|filters";
+        if (type === "brand") key = "stellox";
+        else if (type === "part") key = "filters";
+        else if (type === "set") key = "yandex-1";
+        else if (type === "brand_part") key = "stellox|filters";
+        else if (type === "part_set") key = "filters|yandex-1";
+        else if (type === "brand_part_set") key = "stellox|filters|yandex-1";
+        state.discounts.push({ type, key, value: 10 });
+        refreshRules();
+        calc();
+      };
+    });
+    document.querySelectorAll("[data-add-markup]").forEach((btn) => {
+      btn.onclick = () => {
+        const type = btn.dataset.addMarkup;
+        let key = "stellox|filters";
+        if (type === "brand") key = "stellox";
+        else if (type === "part") key = "filters";
+        else if (type === "set") key = "yandex-1";
+        else if (type === "brand_part") key = "stellox|filters";
+        else if (type === "part_set") key = "filters|yandex-1";
+        else if (type === "brand_part_set") key = "stellox|filters|yandex-1";
+        state.markups.push({ type, key, value: 10 });
+        refreshRules();
+        calc();
+      };
+    });
+
+    [
+      "cogs", "price", "p-floor", "fee-custom", "pm-first", "pm-first-rub",
+      "mid-base", "mid-rate1", "mid-rate2", "mid-cap",
+      "m-default", "sk-base", "sort", "agency",
+      "round-mode", "sku-code",
+    ].forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", calc);
+    });
+
+    $("btn-save").onclick = () => toast("Mock: сохранено в ym_price_management");
+    $("btn-recalc").onclick = () => toast("Mock: пересчёт всех товаров → P в Shop → F-PRICE-SYNC");
+
+    // sidebar: expand Ценообразование + active link
+    const navPricing = document.getElementById("nav-pricing");
+    const navToggle = navPricing?.querySelector(".nav-toggle");
+    navToggle?.addEventListener("click", () => {
+      const open = navPricing.classList.toggle("open");
+      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    document.querySelectorAll(".sidebar nav a").forEach((a) => {
+      a.addEventListener("click", () => {
+        document.querySelectorAll(".sidebar nav a").forEach((x) => x.classList.remove("active"));
+        a.classList.add("active");
+        if (a.closest(".nav-sub")) navPricing?.classList.add("open");
+      });
+    });
+
+    calc();
+  </script>
+</body>
+</html>

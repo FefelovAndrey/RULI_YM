@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Комиссии по категориям — ЯМ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #e8ecf0;
+      --panel: #fff;
+      --ink: #1a1d21;
+      --muted: #5c6570;
+      --line: #d0d7de;
+      --accent: #fc0;
+      --accent-ink: #1a1a1a;
+      --sidebar: #1e2227;
+      --sidebar-ink: #c5ccd4;
+      --focus: #2b6cb0;
+      --sans: "Manrope", "Segoe UI", system-ui, sans-serif;
+      --display: "Unbounded", "Manrope", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--bg); line-height: 1.45; }
+    .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+    .sidebar { background: var(--sidebar); color: var(--sidebar-ink); padding: 18px 12px 28px; }
+    .sidebar .brand { color: var(--accent); font-weight: 700; font-size: 14px; margin-bottom: 14px; padding: 0 8px; }
+    .sidebar nav a {
+      display: block; color: inherit; text-decoration: none; padding: 7px 10px; border-radius: 6px; font-size: 12.5px;
+    }
+    .sidebar nav a:hover, .sidebar nav a.active { background: #323840; color: #fff; }
+    .sidebar .nav-sec { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #88919c; margin: 14px 8px 6px; }
+    .main { padding: 28px 28px 56px; max-width: 1080px; }
+    .page-header {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+      gap: 16px 24px; margin: 0 0 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line);
+    }
+    .page-kicker {
+      margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    h1.page-title {
+      margin: 0; font-family: var(--display); font-size: clamp(24px, 3vw, 32px);
+      font-weight: 600; letter-spacing: -0.03em; line-height: 1.15;
+    }
+    h1.page-title .ym-mark {
+      display: inline-block; margin-left: 2px; padding: 2px 10px 4px; border-radius: 6px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 700;
+    }
+    .page-title-accent {
+      display: block; width: 48px; height: 3px; margin-top: 12px; border-radius: 2px; background: var(--accent);
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px; margin-bottom: 14px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 15px; }
+    .card .sub { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: middle; }
+    th { background: #f2f5f8; font-weight: 600; }
+    input[type="number"], input[type="text"] {
+      width: 100%; max-width: 140px; font: inherit; padding: 7px 9px;
+      border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    }
+    input:focus { outline: 2px solid color-mix(in srgb, var(--focus) 35%, transparent); border-color: var(--focus); }
+    button {
+      font: inherit; cursor: pointer; border: 0; border-radius: 6px; padding: 8px 12px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 600;
+    }
+    button.ghost { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-weight: 500; padding: 4px 10px; font-size: 12px; }
+    button.danger { background: #fff; border: 1px solid #e8b4b0; color: #b42318; font-weight: 500; padding: 4px 8px; font-size: 12px; }
+    button.primary-blue { background: #2b6cb0; color: #fff; }
+    button.primary-blue:hover { background: #245a96; }
+    .rules-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    #toast { font-size: 12px; color: #0f7b3a; margin-left: 8px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Яндекс Маркет · RULI</div>
+      <div class="nav-sec">Приложение ym</div>
+      <nav>
+        <a href="ym-price-mgmt-ui-example.html">← Ценообразование</a>
+        <a href="ym-fee-categories.html" class="active">Комиссии по категориям</a>
+        <a href="ym-boost.html">Буст</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <p class="page-kicker">Яндекс Маркет · FBS</p>
+          <h1 class="page-title">Комиссии по категориям <span class="ym-mark">ЯМ</span></h1>
+          <span class="page-title-accent" aria-hidden="true"></span>
+        </div>
+        <div class="toolbar">
+          <button type="button" id="btn-save">Сохранить</button>
+          <span id="toast"></span>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Справочник К (fee%)</h2>
+        <p class="sub">Минимальный процент размещения по категориям · mock (Q-016)</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Категория</th>
+              <th>К, %</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fee-body"></tbody>
+        </table>
+        <div class="rules-actions">
+          <button type="button" class="ghost" id="add-fee">+ категория</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      fees: [
+        { name: "Салонные фильтры", pct: 46 },
+        { name: "Фары (низ)", pct: 45 },
+        { name: "Фары (верх)", pct: 47 },
+      ],
+    };
+
+    function $(id) { return document.getElementById(id); }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      setTimeout(() => { $("toast").textContent = ""; }, 2800);
+    }
+
+    function render() {
+      const tb = $("fee-body");
+      tb.innerHTML = state.fees.map((r, i) => `<tr>
+        <td><input type="text" data-i="${i}" data-f="name" value="${r.name.replace(/"/g, "&quot;")}" style="max-width:320px" /></td>
+        <td><input type="number" data-i="${i}" data-f="pct" value="${r.pct}" min="0" step="0.1" /></td>
+        <td><button type="button" class="danger" data-del="${i}">×</button></td>
+      </tr>`).join("");
+    }
+
+    $("fee-body").onchange = (e) => {
+      const t = e.target;
+      const i = +t.dataset.i;
+      if (t.dataset.f === "name") state.fees[i].name = t.value;
+      if (t.dataset.f === "pct") state.fees[i].pct = Number(t.value) || 0;
+    };
+    $("fee-body").onclick = (e) => {
+      if (e.target.dataset.del != null) {
+        state.fees.splice(+e.target.dataset.del, 1);
+        render();
+      }
+    };
+    $("add-fee").onclick = () => {
+      state.fees.push({ name: "Новая категория", pct: 46 });
+      render();
+    };
+    $("btn-save").onclick = () => toast("Mock: комиссии сохранены");
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Буст — ЯМ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #e8ecf0;
+      --panel: #fff;
+      --ink: #1a1d21;
+      --muted: #5c6570;
+      --line: #d0d7de;
+      --accent: #fc0;
+      --accent-ink: #1a1a1a;
+      --sidebar: #1e2227;
+      --sidebar-ink: #c5ccd4;
+      --focus: #2b6cb0;
+      --ok: #2f9e44;
+      --warn: #e6a817;
+      --sans: "Manrope", "Segoe UI", system-ui, sans-serif;
+      --display: "Unbounded", "Manrope", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--bg); line-height: 1.45; }
+    .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+    .sidebar { background: var(--sidebar); color: var(--sidebar-ink); padding: 18px 12px 28px; }
+    .sidebar .brand { color: var(--accent); font-weight: 700; font-size: 14px; margin-bottom: 14px; padding: 0 8px; }
+    .sidebar nav a {
+      display: block; color: inherit; text-decoration: none; padding: 7px 10px; border-radius: 6px; font-size: 12.5px;
+    }
+    .sidebar nav a:hover, .sidebar nav a.active { background: #323840; color: #fff; }
+    .sidebar .nav-sec { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #88919c; margin: 14px 8px 6px; }
+    .main { padding: 28px 28px 56px; max-width: 1080px; }
+    .page-header {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+      gap: 16px 24px; margin: 0 0 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line);
+    }
+    .page-kicker {
+      margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    h1.page-title {
+      margin: 0; font-family: var(--display); font-size: clamp(24px, 3vw, 32px);
+      font-weight: 600; letter-spacing: -0.03em; line-height: 1.15;
+    }
+    h1.page-title .ym-mark {
+      display: inline-block; margin-left: 2px; padding: 2px 10px 4px; border-radius: 6px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 700;
+    }
+    .page-title-accent {
+      display: block; width: 48px; height: 3px; margin-top: 12px; border-radius: 2px; background: var(--accent);
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px; margin-bottom: 14px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 15px; }
+    .card .sub { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    button {
+      font: inherit; cursor: pointer; border: 0; border-radius: 6px; padding: 8px 12px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 600;
+    }
+    button.ghost { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-weight: 500; }
+    button.ok { background: var(--ok); color: #fff; }
+    button.warn { background: var(--warn); color: #1a1a1a; }
+    button.danger {
+      background: #fff; border: 1px solid #e8b4b0; color: #b42318;
+      font-weight: 500; padding: 7px 10px; font-size: 12px;
+    }
+    #toast { font-size: 12px; color: #0f7b3a; margin-left: 4px; }
+    .busts-head {
+      display: grid; grid-template-columns: minmax(220px, 1fr) 160px 100px;
+      gap: 10px; align-items: end; margin: 0 0 8px; padding: 0 2px;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+    }
+    .bust-row {
+      display: grid; grid-template-columns: minmax(220px, 1fr) 160px 100px;
+      gap: 10px; align-items: center; margin-bottom: 8px;
+    }
+    select, input[type="number"] {
+      width: 100%; font: inherit; padding: 8px 10px;
+      border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    }
+    select:focus, input:focus {
+      outline: 2px solid color-mix(in srgb, var(--focus) 35%, transparent);
+      border-color: var(--focus);
+    }
+    .empty {
+      padding: 18px 12px; border: 1px dashed var(--line); border-radius: 8px;
+      color: var(--muted); font-size: 13px; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Яндекс Маркет · RULI</div>
+      <div class="nav-sec">Приложение ym</div>
+      <nav>
+        <a href="ym-price-mgmt-ui-example.html">← Ценообразование</a>
+        <a href="ym-fee-categories.html">Комиссии по категориям</a>
+        <a href="ym-boost.html" class="active">Буст</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <p class="page-kicker">Яндекс Маркет · плагин ym</p>
+          <h1 class="page-title">Буст <span class="ym-mark">ЯМ</span></h1>
+          <span class="page-title-accent" aria-hidden="true"></span>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Настройки буста</h2>
+        <p class="sub">Как во вкладке «Буст» плагина: список (set) + процент маржи (ставка) · mock</p>
+
+        <div class="toolbar" style="margin-bottom:16px">
+          <button type="button" class="ok" id="btn-add">Добавить новый буст</button>
+          <button type="button" id="btn-save" class="ok">Сохранить настройки</button>
+          <span id="toast"></span>
+        </div>
+
+        <div id="busts-wrap">
+          <div class="busts-head" id="busts-head" hidden>
+            <div>Список</div>
+            <div>Процент маржи</div>
+            <div></div>
+          </div>
+          <div id="busts-body"></div>
+          <div class="empty" id="busts-empty">Нет правил буста. Нажмите «Добавить новый буст».</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SETS = [
+      { value: "yandex-1", title: "yandex-1" },
+      { value: "ym-promo", title: "ym-promo" },
+      { value: "filters-boost", title: "Фильтры — буст" },
+      { value: "lights-boost", title: "Фары — буст" },
+    ];
+
+    const state = {
+      busts: [
+        { set: "yandex-1", bid: 6.57 },
+        { set: "ym-promo", bid: 8 },
+      ],
+      dirty: false,
+    };
+
+    function $(id) { return document.getElementById(id); }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      setTimeout(() => { $("toast").textContent = ""; }, 2800);
+    }
+
+    function setDirty(v) {
+      state.dirty = v;
+      const btn = $("btn-save");
+      btn.classList.toggle("warn", v);
+      btn.classList.toggle("ok", !v);
+    }
+
+    function render() {
+      const body = $("busts-body");
+      const empty = $("busts-empty");
+      const head = $("busts-head");
+      const has = state.busts.length > 0;
+      empty.hidden = has;
+      head.hidden = !has;
+
+      body.innerHTML = state.busts.map((b, i) => {
+        const opts = SETS.map((s) =>
+          `<option value="${s.value}" ${b.set === s.value ? "selected" : ""}>${s.title}</option>`
+        ).join("");
+        return `<div class="bust-row" data-i="${i}">
+          <select data-f="set" data-i="${i}">
+            <option value="" disabled ${!b.set ? "selected" : ""}>Выберите один из вариантов</option>
+            ${opts}
+          </select>
+          <input type="number" step="0.01" min="0" lang="en-US" data-f="bid" data-i="${i}" value="${b.bid}" />
+          <button type="button" class="danger" data-del="${i}">удалить</button>
+        </div>`;
+      }).join("");
+    }
+
+    $("busts-body").onchange = (e) => {
+      const t = e.target;
+      if (t.dataset.i == null) return;
+      const i = +t.dataset.i;
+      if (t.dataset.f === "set") state.busts[i].set = t.value;
+      if (t.dataset.f === "bid") state.busts[i].bid = Number(t.value) || 0;
+      setDirty(true);
+    };
+
+    $("busts-body").onclick = (e) => {
+      if (e.target.dataset.del == null) return;
+      state.busts.splice(+e.target.dataset.del, 1);
+      setDirty(true);
+      render();
+    };
+
+    $("btn-add").onclick = () => {
+      state.busts.push({ set: "", bid: 0 });
+      setDirty(true);
+      render();
+    };
+
+    $("btn-save").onclick = () => {
+      setDirty(false);
+      toast("Mock: настройки буста сохранены");
+    };
+
+    render();
+  </script>
+</body>
+</html>
