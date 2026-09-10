@@ -62,14 +62,14 @@
     .main { padding: 28px 28px 56px; max-width: 1080px; }
     .page-header {
       display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 16px 24px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
       margin: 0 0 22px;
       padding-bottom: 18px;
       border-bottom: 1px solid var(--line);
     }
+    .page-header > div:first-child { min-width: 0; max-width: 100%; }
     .page-kicker {
       margin: 0 0 8px;
       font-size: 11px;
@@ -114,7 +114,26 @@
     }
     .badge.ym { background: #fff8cc; border-color: #e0c200; color: #5a4e00; }
     .badge.full { background: #e8f5ee; border-color: #9dceb0; color: #0f7b3a; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; }
+    .toolbar {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      align-items: center;
+      margin: 0;
+      width: max-content;
+      max-width: 100%;
+      justify-content: flex-start;
+      align-self: flex-start;
+      flex-shrink: 0;
+    }
+    .page-header .toolbar button {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .page-header #toast {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
     button {
       font: inherit; cursor: pointer; border: 0; border-radius: 6px; padding: 8px 12px;
       background: var(--accent); color: var(--accent-ink); font-weight: 600;
@@ -399,13 +418,13 @@
         <div class="field">
           <div class="name">Формула расчета цены для ЯМ (ЯЦ)</div>
           <div>
-            <textarea id="expr-pmin">(M + COGS + b - СКИДКА + НАЦЕНКА) / (1 - a)</textarea>
+            <textarea id="expr-pmin">(РЦ - СКИДКА + НАЦЕНКА + ПМ + СМ + П)/(1 - K - Э)</textarea>
           </div>
         </div>
         <div class="field">
-          <div class="name">Цена Яндекса, если ПМ больше 1000 ₽<span class="hint">ветка при потолке LAST 1000 ₽ (P≳20 000)</span></div>
+          <div class="name">Цена Яндекса, если ПМ больше 1000 ₽</div>
           <div>
-            <textarea id="expr-pmin-lastcap">(M + COGS + MID + 25 + 0,12 + 1000 - СКИДКА + НАЦЕНКА) / (1 - fee% - xfer - boost)</textarea>
+            <textarea id="expr-pmin-lastcap">(РЦ - СКИДКА + НАЦЕНКА + ПМ + СМ + П)/(1 - K - Э)</textarea>
           </div>
         </div>
         <div class="field">
