@@ -552,6 +552,31 @@
             </div>
           </div>
         </div>
+        <div class="field field-below">
+          <div class="name">Корректировка по минимальной прибыли<span class="hint">расчётные показатели по введённому SKU</span></div>
+          <div>
+            <div class="row" style="margin-bottom:10px">
+              <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted)">
+                SKU
+                <input type="text" id="corr-sku" value="ABC-1001" placeholder="Введите SKU" style="max-width:280px" />
+              </label>
+            </div>
+            <div class="stat-grid" style="margin:0; grid-template-columns: repeat(3, 1fr); max-width: 520px;">
+              <div class="stat">
+                <div class="lbl">% буста</div>
+                <div class="val" id="out-corr-boost">—</div>
+              </div>
+              <div class="stat">
+                <div class="lbl">% скидки</div>
+                <div class="val" id="out-corr-discount">—</div>
+              </div>
+              <div class="stat" id="stat-corr-margin">
+                <div class="lbl">Рассчитанная маржа</div>
+                <div class="val" id="out-corr-margin">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="card" id="s-excl">
@@ -757,6 +782,10 @@
       mPart: [{ part: "filters", value: 100 }, { part: "lights", value: 150 }],
       skb: [{ brand: "bosch", value: 20 }],
       skt: [],
+      boosts: [
+        { set: "yandex-1", bid: 6.57 },
+        { set: "ym-promo", bid: 8 },
+      ],
       discounts: [
         { type: "brand", key: "stellox", value: 0 },
         { type: "set", key: "ym-promo", value: 30 },
@@ -1054,7 +1083,9 @@
       const sort = num("sort");
       const agency = num("agency");
       const xfer = 0;
-      const boost = 0;
+      const boostRow = state.boosts.find((r) => r.set === setId);
+      const boostPct = boostRow ? Number(boostRow.bid) || 0 : 0;
+      const boost = boostPct / 100;
       const fee = feePct();
 
       const risk = 0;
@@ -1104,12 +1135,19 @@
         ? round2(aP * P + (sort + agency + risk))
         : round2(feeRub + last + pmRub + midAmt + sort + agency + xferRub + boostRub + risk);
       const profit = round2(P - ret - C);
+      const discountPct = P > 0 ? round2((discount / P) * 100) : 0;
+      const marginPct = P > 0 ? round2((profit / P) * 100) : 0;
 
       $("out-m").textContent = round2(M).toFixed(0) + " ₽";
       $("out-pmin").textContent = Number.isFinite(pMin) ? pMin.toFixed(0) + " ₽" : "—";
       $("out-ret").textContent = ret.toFixed(2) + " ₽";
       $("out-profit").textContent = profit.toFixed(2) + " ₽";
       $("stat-profit").className = "stat " + (profit >= M - 0.5 ? "ok" : "warn");
+
+      $("out-corr-boost").textContent = boostPct.toFixed(2) + " %";
+      $("out-corr-discount").textContent = discountPct.toFixed(2) + " %";
+      $("out-corr-margin").textContent = marginPct.toFixed(2) + " %";
+      $("stat-corr-margin").className = "stat " + (profit >= M - 0.5 ? "ok" : "warn");
 
       const rows = [
         ["К", feeRub],
@@ -1267,12 +1305,15 @@
       "cogs", "price", "p-floor", "fee-custom", "pm-first", "pm-first-rub",
       "mid-base", "mid-rate1", "mid-rate2", "mid-cap",
       "m-default", "sk-base", "sort", "agency",
-      "round-mode", "sku-code",
+      "round-mode", "sku-code", "corr-sku",
     ].forEach((id) => {
       const el = $(id);
       if (!el) return;
       el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", calc);
     });
+
+    $("corr-sku").addEventListener("input", () => { $("sku-code").value = $("corr-sku").value; });
+    $("sku-code").addEventListener("input", () => { $("corr-sku").value = $("sku-code").value; });
 
     $("btn-save").onclick = () => toast("Mock: сохранено в ym_price_management");
     $("btn-recalc").onclick = () => toast("Mock: пересчёт всех товаров → P в Shop → F-PRICE-SYNC");
