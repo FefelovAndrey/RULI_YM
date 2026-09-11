@@ -1,6 +1,6 @@
 name: Deploy GitHub Pages
 
-# Redeploy after GitHub Pages source is enabled in repo settings.
+# Redeploy after github-pages environment allows the pricing branch.
 
 on:
   push:
