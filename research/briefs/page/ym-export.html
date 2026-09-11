@@ -267,7 +267,7 @@
 
       <section class="card">
         <h2>Список ID SKU</h2>
-        <p class="sub">Подготовка списка артикулов для выгрузки цен на Яндекс Маркет · mock</p>
+        <p class="sub">Подготовка списка артикулов для выгрузки цен на Яндекс Маркет</p>
         <div class="field">
           <div>
             <div class="upload-panel">
@@ -286,7 +286,6 @@
                 <div class="upload-footer">
                   <div class="left">
                     <button type="button" class="primary-blue" id="push-apply">Применить список</button>
-                    <button type="button" class="primary-blue" id="push-send">Выгрузить на ЯМ</button>
                     <button type="button" class="ghost" id="push-clear">Очистить</button>
                   </div>
                 </div>
@@ -396,7 +395,6 @@
       nameEl.classList.remove("has-file");
       setPushSkus([]);
     };
-    $("push-send").onclick = sendPush;
     $("btn-send").onclick = sendPush;
 
     renderPushSkus();

@@ -163,6 +163,18 @@
       outline: none; border-color: var(--focus);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
     }
+    input[readonly] {
+      background: #f8fafc;
+      color: var(--ink);
+      cursor: default;
+      border-color: var(--line);
+      box-shadow: none;
+    }
+    input[readonly]:hover { border-color: var(--line); }
+    input[readonly]:focus {
+      border-color: var(--line);
+      box-shadow: none;
+    }
     .rules-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   </style>
 </head>
@@ -186,19 +198,15 @@
           <h1 class="page-title">Комиссии по категориям <span class="ym-mark">ЯМ</span></h1>
           <span class="page-title-accent" aria-hidden="true"></span>
         </div>
-        <div class="toolbar">
-          <button type="button" id="btn-save">Сохранить</button>
-          <span id="toast"></span>
-        </div>
       </header>
 
       <section class="card">
         <h2>Справочник размещения товаров по категориям</h2>
-        <p class="sub">Минимальный процент размещения по категориям · mock (Q-016)</p>
+        <p class="sub">Минимальный процент размещения по категориям</p>
         <table>
           <thead>
             <tr>
-              <th>Категория</th>
+              <th>Категория ЯМ</th>
               <th>К, %</th>
               <th></th>
             </tr>
@@ -223,26 +231,15 @@
 
     function $(id) { return document.getElementById(id); }
 
-    function toast(msg) {
-      $("toast").textContent = msg;
-      setTimeout(() => { $("toast").textContent = ""; }, 2800);
-    }
-
     function render() {
       const tb = $("fee-body");
       tb.innerHTML = state.fees.map((r, i) => `<tr>
-        <td><input type="text" data-i="${i}" data-f="name" value="${r.name.replace(/"/g, "&quot;")}" /></td>
-        <td><input type="number" data-i="${i}" data-f="pct" value="${r.pct}" min="0" step="0.1" /></td>
+        <td><input type="text" data-i="${i}" data-f="name" value="${r.name.replace(/"/g, "&quot;")}" readonly tabindex="-1" /></td>
+        <td><input type="number" data-i="${i}" data-f="pct" value="${r.pct}" min="0" step="0.1" readonly tabindex="-1" /></td>
         <td><button type="button" class="danger" data-del="${i}">×</button></td>
       </tr>`).join("");
     }
 
-    $("fee-body").onchange = (e) => {
-      const t = e.target;
-      const i = +t.dataset.i;
-      if (t.dataset.f === "name") state.fees[i].name = t.value;
-      if (t.dataset.f === "pct") state.fees[i].pct = Number(t.value) || 0;
-    };
     $("fee-body").onclick = (e) => {
       if (e.target.dataset.del != null) {
         state.fees.splice(+e.target.dataset.del, 1);
@@ -253,7 +250,6 @@
       state.fees.push({ name: "Новая категория", pct: 46 });
       render();
     };
-    $("btn-save").onclick = () => toast("Mock: комиссии сохранены");
 
     render();
   </script>

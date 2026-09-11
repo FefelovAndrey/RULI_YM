@@ -878,7 +878,7 @@
 
         <div class="field field-below">
           <div class="leg">
-            <div class="leg-title">Корректировка по минимальной прибыли<span class="hint">расчётные показатели по введённому SKU</span></div>
+            <div class="leg-title">Корректировка по минимальной прибыли<span class="hint">расчётные показатели по введённому товару</span></div>
             <div class="row" style="margin-bottom:12px">
               <label class="leg-input">
                 ID SKU
@@ -888,24 +888,24 @@
             <div class="pair-stack pair-stack-wide pair-stack-3">
               <div class="pair-card">
                 <div class="pair-k">БУСТ</div>
-                <div class="pair-l">% буста</div>
-                <div class="pair-hint">По правилам буста для SKU</div>
+                <div class="pair-l">% буста от маржи</div>
+                <div class="pair-hint">По правилам буста для ID SKU</div>
                 <div class="pair-row">
                   <span class="pair-val" id="out-corr-boost">—</span>
                 </div>
               </div>
               <div class="pair-card">
                 <div class="pair-k">СК</div>
-                <div class="pair-l">% скидки</div>
-                <div class="pair-hint">Доля скидки от цены P</div>
+                <div class="pair-l">Значение буста в ₽</div>
+                <div class="pair-hint">По правилам буста для ID SKU</div>
                 <div class="pair-row">
                   <span class="pair-val" id="out-corr-discount">—</span>
                 </div>
               </div>
               <div class="pair-card" id="stat-corr-margin">
-                <div class="pair-k">МАРЖА</div>
-                <div class="pair-l">Рассчитанная маржа</div>
-                <div class="pair-hint">Прибыль @ P / P</div>
+                <div class="pair-k">МП прибыль</div>
+                <div class="pair-l">Рассчитаная прибыль в ₽</div>
+                <div class="pair-hint">По правилам буста для ID SKU</div>
                 <div class="pair-row">
                   <span class="pair-val" id="out-corr-margin">—</span>
                 </div>
@@ -1304,8 +1304,6 @@
         ? round2(aP * P + (sort + risk))
         : round2(feeRub + pmRub + midAmt + sort + agencyRub + xferRub + boostRub + risk);
       const profit = round2(P - ret - C);
-      const discountPct = P > 0 ? round2((discount / P) * 100) : 0;
-      const marginPct = P > 0 ? round2((profit / P) * 100) : 0;
 
       $("out-m").textContent = round2(M).toFixed(0) + " ₽";
       $("out-pmin").textContent = Number.isFinite(pMin) ? pMin.toFixed(0) + " ₽" : "—";
@@ -1314,8 +1312,8 @@
       $("stat-profit").className = "stat " + (profit >= M - 0.5 ? "ok" : "warn");
 
       $("out-corr-boost").textContent = boostPct.toFixed(2) + " %";
-      $("out-corr-discount").textContent = discountPct.toFixed(2) + " %";
-      $("out-corr-margin").textContent = marginPct.toFixed(2) + " %";
+      $("out-corr-discount").textContent = boostRub.toFixed(2) + " ₽";
+      $("out-corr-margin").textContent = profit.toFixed(2) + " ₽";
       $("stat-corr-margin").className = "pair-card " + (profit >= M - 0.5 ? "ok" : "warn");
 
       const rows = [
