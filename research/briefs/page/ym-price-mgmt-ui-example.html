@@ -560,10 +560,10 @@
             <a href="#s5">5. Скидки</a>
             <a href="#s6">6. Наценки</a>
             <a href="#s8">7. Тест SKU</a>
-            <a href="#s9">8. Выгрузка на ЯМ</a>
           </div>
         </div>
         <a href="ym-fee-categories.html">Комиссии по категориям</a>
+        <a href="ym-export.html">Выгрузка на ЯМ</a>
         <a href="ym-boost.html">Буст</a>
       </nav>
     </aside>
@@ -915,45 +915,6 @@
         </div>
       </section>
 
-      <!-- 9 -->
-      <section class="card" id="s9">
-        <h2>8. Выгрузка на яндекс маркет</h2>
-        <div class="field field-below">
-          <div class="name">Список SKU</div>
-          <div>
-            <div class="upload-panel">
-              <div class="upload-zone">
-                <p class="upload-zone-title">Загрузить из файла</p>
-                <p class="upload-zone-hint">Поддерживаются txt и csv. Один артикул в строке или через точку с запятой / запятую.</p>
-                <div class="upload-pick">
-                  <input type="file" id="push-file" accept=".txt,.csv,text/plain,text/csv" />
-                  <label for="push-file" class="btn-file">Выбрать файл</label>
-                  <span class="file-name" id="push-file-name">Файл не выбран</span>
-                </div>
-              </div>
-              <div class="upload-paste">
-                <label for="push-paste">Или вставить список вручную</label>
-                <textarea id="push-paste" placeholder="Например:&#10;ABC-1001&#10;ABC-1002&#10;XYZ-55"></textarea>
-                <div class="upload-footer">
-                  <div class="left">
-                    <button type="button" class="primary-blue" id="push-apply">Применить список</button>
-                    <button type="button" class="primary-blue" id="push-send">Выгрузить на ЯМ</button>
-                    <button type="button" class="ghost" id="push-clear">Очистить</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="sku-meta" id="push-meta">В списке: 0 позиций</div>
-            <div class="sku-list" id="push-list-wrap" hidden>
-              <table>
-                <thead><tr><th>№</th><th>Артикул (SKU)</th><th></th></tr></thead>
-                <tbody id="push-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </main>
   </div>
 
@@ -995,7 +956,6 @@
       nc: [],
       exclusions: [],
       exclRules: [],
-      pushSkus: [],
     };
 
     function $(id) { return document.getElementById(id); }
@@ -1191,28 +1151,6 @@
       toast(list.length ? `Загружено артикулов: ${list.length}` : "Список очищен");
     }
 
-    function renderPushSkus() {
-      const tb = $("push-body");
-      const wrap = $("push-list-wrap");
-      const meta = $("push-meta");
-      const rows = state.pushSkus;
-      meta.textContent = rows.length
-        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}`
-        : "В списке: 0 позиций";
-      wrap.hidden = rows.length === 0;
-      tb.innerHTML = rows.map((sku, i) => `<tr>
-        <td class="mono">${i + 1}</td>
-        <td class="mono">${sku}</td>
-        <td><button type="button" class="danger" data-del="${i}" title="Удалить">×</button></td>
-      </tr>`).join("");
-    }
-
-    function setPushSkus(list) {
-      state.pushSkus = list;
-      renderPushSkus();
-      toast(list.length ? `К выгрузке: ${list.length}` : "Список выгрузки очищен");
-    }
-
     function refreshRules() {
       renderKeyRows("m-part-body", state.mPart, "part");
       renderKeyRows("skb-body", state.skb, "brand");
@@ -1221,7 +1159,6 @@
       renderTypedRules("markup-body", state.markups);
       renderExclRules("excl-rules-body", state.exclRules);
       renderExclusions();
-      renderPushSkus();
     }
 
     function syncMidLabels() {
@@ -1450,51 +1387,6 @@
       nameEl.textContent = "Файл не выбран";
       nameEl.classList.remove("has-file");
       setExclusions([]);
-    };
-
-    {
-      const tb = $("push-body");
-      tb.onclick = (e) => {
-        if (e.target.dataset.del != null) {
-          state.pushSkus.splice(+e.target.dataset.del, 1);
-          renderPushSkus();
-        }
-      };
-    }
-
-    $("push-file").onchange = (e) => {
-      const file = e.target.files && e.target.files[0];
-      const nameEl = $("push-file-name");
-      if (!file) {
-        nameEl.textContent = "Файл не выбран";
-        nameEl.classList.remove("has-file");
-        return;
-      }
-      nameEl.textContent = file.name;
-      nameEl.classList.add("has-file");
-      const reader = new FileReader();
-      reader.onload = () => {
-        const list = parseSkuList(reader.result);
-        $("push-paste").value = list.join("\n");
-        setPushSkus(list);
-      };
-      reader.readAsText(file, "UTF-8");
-    };
-    $("push-apply").onclick = () => setPushSkus(parseSkuList($("push-paste").value));
-    $("push-clear").onclick = () => {
-      $("push-paste").value = "";
-      $("push-file").value = "";
-      const nameEl = $("push-file-name");
-      nameEl.textContent = "Файл не выбран";
-      nameEl.classList.remove("has-file");
-      setPushSkus([]);
-    };
-    $("push-send").onclick = () => {
-      if (!state.pushSkus.length) {
-        toast("Сначала добавьте SKU в список");
-        return;
-      }
-      toast(`Mock: выгрузка ${state.pushSkus.length} SKU на Яндекс Маркет`);
     };
 
     $("add-m-part").onclick = () => { state.mPart.push({ part: "filters", value: 100 }); refreshRules(); calc(); };

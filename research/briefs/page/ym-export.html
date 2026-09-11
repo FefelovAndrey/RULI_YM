@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Выгрузка на ЯМ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #f0f3f8;
+      --bg1: #e8eef7;
+      --panel: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --line-strong: #cbd5e1;
+      --accent: #ffcc00;
+      --accent-ink: #111827;
+      --ok: #059669;
+      --danger: #dc2626;
+      --sidebar: #0b1220;
+      --sidebar-elev: #121a2b;
+      --sidebar-ink: #94a3b8;
+      --sidebar-active: #1e293b;
+      --focus: #2563eb;
+      --blue: #1d4ed8;
+      --blue-hover: #1e40af;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
+      --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+      --radius-sm: 8px;
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Plus Jakarta Sans", "IBM Plex Sans", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      line-height: 1.5;
+      background:
+        radial-gradient(1200px 600px at 12% -10%, rgba(37, 99, 235, 0.08), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(255, 204, 0, 0.12), transparent 45%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 40%, #edf1f7 100%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+    .layout { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+    .sidebar {
+      background: linear-gradient(180deg, var(--sidebar) 0%, #0a101c 100%);
+      color: var(--sidebar-ink);
+      padding: 22px 14px 32px;
+      border-right: 1px solid rgba(148, 163, 184, 0.08);
+    }
+    .sidebar .brand {
+      color: #fff; font-family: var(--display); font-weight: 800; font-size: 15px;
+      letter-spacing: -0.02em; margin-bottom: 18px; padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(255,204,0,0.16), transparent 70%);
+      border: 1px solid rgba(255,204,0,0.18);
+    }
+    .sidebar .brand::after {
+      content: ""; display: block; width: 28px; height: 2px; margin-top: 8px;
+      border-radius: 2px; background: var(--accent);
+    }
+    .sidebar nav a {
+      display: block; color: inherit; text-decoration: none;
+      padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      transition: background .15s ease, color .15s ease;
+    }
+    .sidebar nav a:hover { background: var(--sidebar-elev); color: #e2e8f0; }
+    .sidebar nav a.active { background: var(--sidebar-active); color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
+    .sidebar .nav-sec {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+      color: #64748b; margin: 16px 10px 8px; font-weight: 600;
+    }
+    .main { padding: 32px 36px 72px; max-width: 1120px; }
+    @media (max-width: 720px) { .main { padding: 20px 16px 48px; } }
+    .page-header {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 16px;
+      margin: 0 0 28px; padding: 22px 24px 20px; border-radius: 16px;
+      background: rgba(255,255,255,0.72); border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: var(--shadow-sm); backdrop-filter: blur(10px);
+    }
+    .page-kicker {
+      margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    h1.page-title {
+      margin: 0; font-family: var(--display); font-size: clamp(28px, 3.4vw, 36px);
+      font-weight: 800; letter-spacing: -0.035em; line-height: 1.12; color: var(--ink);
+    }
+    h1.page-title .ym-mark {
+      display: inline-block; margin-left: 6px; padding: 3px 11px 5px; border-radius: 8px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 800;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.06); vertical-align: middle;
+    }
+    .page-title-accent {
+      display: block; width: 40px; height: 3px; margin-top: 14px; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), rgba(255,204,0,0.15));
+    }
+    .toolbar {
+      display: flex; flex-wrap: nowrap; gap: 10px; align-items: center;
+      width: max-content; max-width: 100%; align-self: flex-start;
+    }
+    .page-header .toolbar button {
+      flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 16px;
+      border-radius: 10px; font-weight: 700;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .page-header .toolbar button:hover { transform: translateY(-1px); }
+    button {
+      font: inherit; cursor: pointer; border: 0; border-radius: var(--radius-sm);
+      padding: 8px 14px; background: var(--accent); color: var(--accent-ink); font-weight: 700;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+    }
+    button.primary-blue {
+      background: var(--blue); color: #fff; font-weight: 700;
+      box-shadow: 0 1px 2px rgba(29, 78, 216, 0.25);
+    }
+    button.primary-blue:hover { background: var(--blue-hover); }
+    button.ghost {
+      background: transparent; border: 1px dashed var(--line-strong); color: var(--muted);
+      font-weight: 600; padding: 6px 12px; font-size: 12.5px; box-shadow: none;
+    }
+    button.ghost:hover { background: #f8fafc; color: var(--ink); border-style: solid; }
+    button.danger {
+      background: #fff; border: 1px solid #fecaca; color: var(--danger);
+      font-weight: 600; padding: 4px 8px; font-size: 12px; box-shadow: none;
+    }
+    button.danger:hover { background: #fef2f2; }
+    #toast { font-size: 12.5px; color: var(--ok); font-weight: 600; }
+    .card {
+      background: var(--panel); border: 1px solid rgba(226, 232, 240, 0.95);
+      border-radius: 16px; padding: 20px 22px 18px; margin-bottom: 16px;
+      box-shadow: var(--shadow-md); transition: box-shadow .2s ease;
+    }
+    .card:hover { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04); }
+    .card h2 {
+      margin: 0 0 14px; font-family: var(--display); font-size: 16px; font-weight: 700;
+      letter-spacing: -0.02em; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+    }
+    .card .sub { color: var(--muted); font-size: 12.5px; margin: -6px 0 14px; }
+    .field {
+      display: grid; grid-template-columns: 1fr; gap: 12px; padding: 4px 0;
+    }
+    .field .name { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+    textarea {
+      width: 100%; font: inherit; padding: 10px 12px;
+      border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; color: var(--ink);
+      resize: vertical; min-height: 96px;
+    }
+    textarea:focus {
+      outline: none; border-color: var(--focus);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    }
+    table {
+      width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px;
+      overflow: hidden; border-radius: 10px; border: 1px solid var(--line);
+    }
+    th, td {
+      border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: middle;
+    }
+    th {
+      background: #f8fafc; font-weight: 700; font-size: 12px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f8fafc; }
+    .mono { font-family: var(--mono); font-size: 12.5px; }
+
+    .upload-panel {
+      max-width: 580px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .upload-zone {
+      padding: 18px 18px 16px;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(400px 120px at 0% 0%, rgba(37,99,235,0.05), transparent 60%),
+        linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+    }
+    .upload-zone-title {
+      margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .upload-zone-hint {
+      margin: 0 0 14px; font-size: 12.5px; color: var(--muted); line-height: 1.45;
+    }
+    .upload-pick {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    }
+    .upload-pick input[type="file"] {
+      position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
+    }
+    .btn-file {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line-strong);
+      background: #fff; color: var(--ink); font: inherit; font-weight: 700; font-size: 13px;
+      cursor: pointer; box-shadow: var(--shadow-sm);
+    }
+    .btn-file:hover { border-color: #94a3b8; background: #f8fafc; }
+    .file-name {
+      font-size: 13px; color: var(--muted); max-width: 260px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .file-name.has-file { color: var(--ink); font-weight: 700; }
+    .upload-paste { padding: 16px 18px 18px; }
+    .upload-paste label {
+      display: block; font-size: 12px; font-weight: 700; color: var(--muted);
+      margin-bottom: 8px; letter-spacing: 0.02em;
+    }
+    .upload-paste textarea {
+      max-width: 100%; min-height: 96px; background: #f8fafc;
+    }
+    .upload-footer {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      justify-content: space-between; margin-top: 12px;
+    }
+    .upload-footer .left {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .sku-list {
+      margin-top: 12px; max-height: 240px; overflow: auto;
+      border: 1px solid var(--line); border-radius: 12px; background: #fff;
+      max-width: 580px; box-shadow: var(--shadow-sm);
+    }
+    .sku-list table { margin: 0; border: 0; border-radius: 0; }
+    .sku-list th { position: sticky; top: 0; z-index: 1; }
+    .sku-meta {
+      font-size: 13px; color: var(--muted); margin: 10px 0 0;
+      max-width: 580px; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Яндекс Маркет · RULI</div>
+      <div class="nav-sec">Приложение ym</div>
+      <nav>
+        <a href="ym-price-mgmt-ui-example.html">← Ценообразование</a>
+        <a href="ym-fee-categories.html">Комиссии по категориям</a>
+        <a href="ym-export.html" class="active">Выгрузка на ЯМ</a>
+        <a href="ym-boost.html">Буст</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <p class="page-kicker">Яндекс Маркет · FBS</p>
+          <h1 class="page-title">Выгрузка на ЯМ <span class="ym-mark">ЯМ</span></h1>
+          <span class="page-title-accent" aria-hidden="true"></span>
+        </div>
+        <div class="toolbar">
+          <button type="button" class="primary-blue" id="btn-send">Выгрузить на ЯМ</button>
+          <span id="toast"></span>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Список ID SKU</h2>
+        <p class="sub">Подготовка списка артикулов для выгрузки цен на Яндекс Маркет · mock</p>
+        <div class="field">
+          <div>
+            <div class="upload-panel">
+              <div class="upload-zone">
+                <p class="upload-zone-title">Загрузить из файла</p>
+                <p class="upload-zone-hint">Поддерживаются txt и csv. Один артикул в строке или через точку с запятой / запятую.</p>
+                <div class="upload-pick">
+                  <input type="file" id="push-file" accept=".txt,.csv,text/plain,text/csv" />
+                  <label for="push-file" class="btn-file">Выбрать файл</label>
+                  <span class="file-name" id="push-file-name">Файл не выбран</span>
+                </div>
+              </div>
+              <div class="upload-paste">
+                <label for="push-paste">Или вставить список вручную</label>
+                <textarea id="push-paste" placeholder="Например:&#10;2710634&#10;120045&#10;998877"></textarea>
+                <div class="upload-footer">
+                  <div class="left">
+                    <button type="button" class="primary-blue" id="push-apply">Применить список</button>
+                    <button type="button" class="primary-blue" id="push-send">Выгрузить на ЯМ</button>
+                    <button type="button" class="ghost" id="push-clear">Очистить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sku-meta" id="push-meta">В списке: 0 позиций</div>
+            <div class="sku-list" id="push-list-wrap" hidden>
+              <table>
+                <thead><tr><th>№</th><th>Артикул (ID SKU)</th><th></th></tr></thead>
+                <tbody id="push-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = { pushSkus: [] };
+
+    function $(id) { return document.getElementById(id); }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      setTimeout(() => { $("toast").textContent = ""; }, 2800);
+    }
+
+    function parseSkuList(text) {
+      const raw = String(text || "")
+        .split(/[\n\r;,\t]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const seen = new Set();
+      const out = [];
+      for (const s of raw) {
+        const key = s.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(s);
+      }
+      return out;
+    }
+
+    function renderPushSkus() {
+      const tb = $("push-body");
+      const wrap = $("push-list-wrap");
+      const meta = $("push-meta");
+      const rows = state.pushSkus;
+      meta.textContent = rows.length
+        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}`
+        : "В списке: 0 позиций";
+      wrap.hidden = rows.length === 0;
+      tb.innerHTML = rows.map((sku, i) => `<tr>
+        <td class="mono">${i + 1}</td>
+        <td class="mono">${sku}</td>
+        <td><button type="button" class="danger" data-del="${i}" title="Удалить">×</button></td>
+      </tr>`).join("");
+    }
+
+    function setPushSkus(list) {
+      state.pushSkus = list;
+      renderPushSkus();
+      toast(list.length ? `К выгрузке: ${list.length}` : "Список выгрузки очищен");
+    }
+
+    function sendPush() {
+      if (!state.pushSkus.length) {
+        toast("Сначала добавьте SKU в список");
+        return;
+      }
+      toast(`Mock: выгрузка ${state.pushSkus.length} SKU на Яндекс Маркет`);
+    }
+
+    $("push-body").onclick = (e) => {
+      if (e.target.dataset.del != null) {
+        state.pushSkus.splice(+e.target.dataset.del, 1);
+        renderPushSkus();
+      }
+    };
+
+    $("push-file").onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      const nameEl = $("push-file-name");
+      if (!file) {
+        nameEl.textContent = "Файл не выбран";
+        nameEl.classList.remove("has-file");
+        return;
+      }
+      nameEl.textContent = file.name;
+      nameEl.classList.add("has-file");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const list = parseSkuList(reader.result);
+        $("push-paste").value = list.join("\n");
+        setPushSkus(list);
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+
+    $("push-apply").onclick = () => setPushSkus(parseSkuList($("push-paste").value));
+    $("push-clear").onclick = () => {
+      $("push-paste").value = "";
+      $("push-file").value = "";
+      const nameEl = $("push-file-name");
+      nameEl.textContent = "Файл не выбран";
+      nameEl.classList.remove("has-file");
+      setPushSkus([]);
+    };
+    $("push-send").onclick = sendPush;
+    $("btn-send").onclick = sendPush;
+
+    renderPushSkus();
+  </script>
+</body>
+</html>
