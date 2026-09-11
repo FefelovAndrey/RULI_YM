@@ -1,5 +1,7 @@
 name: Deploy GitHub Pages
 
+# Redeploy after GitHub Pages source is enabled in repo settings.
+
 on:
   push:
     branches: [pricing]
