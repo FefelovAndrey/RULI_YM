@@ -353,6 +353,7 @@
     }
     .leg-input .row { align-items: center; }
     .leg > .row { gap: 28px; }
+    .leg-input .leg-title { margin: 0 0 6px; }
     .mid-table { width: 100%; margin-top: 4px; }
     .mid-table th { white-space: nowrap; }
     .mid-table td { font-size: 13px; }
@@ -367,6 +368,7 @@
       gap: 12px;
       max-width: 460px;
     }
+    .pair-stack.pair-stack-wide { max-width: 760px; }
     @media (max-width: 720px) { .pair-stack { grid-template-columns: 1fr; } }
     .pair-card {
       border: 1px solid var(--line);
@@ -390,6 +392,13 @@
       color: var(--ink);
       letter-spacing: -0.01em;
     }
+    .pair-card .pair-hint {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin: -6px 0 10px;
+      line-height: 1.35;
+    }
     .pair-card .pair-row {
       display: flex;
       align-items: center;
@@ -404,6 +413,18 @@
       color: var(--muted);
       font-weight: 600;
     }
+    .pair-stack.pair-stack-3 { grid-template-columns: 1fr 1fr 1fr; max-width: 760px; }
+    @media (max-width: 720px) { .pair-stack.pair-stack-3 { grid-template-columns: 1fr; } }
+    .pair-card .pair-val {
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .pair-card.ok .pair-val { color: var(--ok); }
+    .pair-card.warn .pair-val { color: var(--warn); }
 
     .upload-panel {
       max-width: 580px;
@@ -567,13 +588,13 @@
         <div class="field">
           <div class="name">Формула расчета цены для ЯМ (ЯЦ)</div>
           <div>
-            <textarea id="expr-pmin">(РЦ - СКИДКА + НАЦЕНКА + ПМ + СМ + П)/(1 - K - Э)</textarea>
+            <textarea id="expr-pmin">(РЦ - СКИДКА + НАЦЕНКА + СМ + П)/(1 - K - Э - ПМ)</textarea>
           </div>
         </div>
         <div class="field">
-          <div class="name">Цена Яндекса, если ПМ больше 1000 ₽</div>
+          <div class="name">Цена Яндекса, если ПМ больше <span id="pm-cap-label">0</span> ₽</div>
           <div>
-            <textarea id="expr-pmin-lastcap">(РЦ - СКИДКА + НАЦЕНКА + ПМ + СМ + П)/(1 - K - Э)</textarea>
+            <textarea id="expr-pmin-lastcap">(РЦ - СКИДКА + НАЦЕНКА + СПМ + СМ + П)/(1 - K - Э)</textarea>
           </div>
         </div>
         <div class="field">
@@ -598,20 +619,23 @@
         <div class="field field-below">
           <div class="name">Плечо доставки</div>
           <div class="leg-stack">
-            <div class="leg">
-              <div class="leg-title">ПМ — первая миля<span class="hint">Доставка в ПВЗ</span></div>
-              <div class="row">
-                <div class="leg-input">
-                  <span>Процент от цены товара</span>
-                  <div class="row">
-                    <input type="number" id="pm-first" value="0" min="0" step="0.1" style="max-width:120px" /> <span>%</span>
-                  </div>
+            <div class="pair-stack pair-stack-wide">
+              <div class="pair-card">
+                <div class="pair-k">ПМ</div>
+                <div class="pair-l">Последняя миля</div>
+                <div class="pair-hint">Доставка в ПВЗ · процент от цены</div>
+                <div class="pair-row">
+                  <input type="number" id="pm-first" value="0" min="0" step="0.1" />
+                  <span class="pair-unit">%</span>
                 </div>
-                <div class="leg-input">
-                  <span>Но не более</span>
-                  <div class="row">
-                    <input type="number" id="pm-first-rub" value="0" min="0" step="1" style="max-width:120px" /> <span>₽</span>
-                  </div>
+              </div>
+              <div class="pair-card">
+                <div class="pair-k">СПМ</div>
+                <div class="pair-l">Стоимость последней мили</div>
+                <div class="pair-hint">Но не более</div>
+                <div class="pair-row">
+                  <input type="number" id="pm-first-rub" value="1000" min="0" step="1" />
+                  <span class="pair-unit">₽</span>
                 </div>
               </div>
             </div>
@@ -654,28 +678,31 @@
               </table>
               <div class="row" style="margin-top:10px">
                 <label>Потолок СМ <input type="number" id="mid-cap" value="5500" min="0" step="1" style="max-width:100px" /> ₽</label>
-                <span class="mono" id="mid-calc-hint"></span>
               </div>
             </div>
           </div>
         </div>
         <div class="field field-below">
-          <div class="name">П+ Э<span class="hint">(Прием + эквайринг)</span></div>
-          <div class="pair-stack">
-            <div class="pair-card">
-              <div class="pair-k">П</div>
-              <div class="pair-l">Приём</div>
-              <div class="pair-row">
-                <input type="number" id="sort" value="25" min="0" step="1" />
-                <span class="pair-unit">₽</span>
+          <div class="name">П + Э<span class="hint">Приём + эквайринг</span></div>
+          <div class="leg-stack">
+            <div class="pair-stack pair-stack-wide">
+              <div class="pair-card">
+                <div class="pair-k">П</div>
+                <div class="pair-l">Приём</div>
+                <div class="pair-hint">Фикс. сумма за заказ</div>
+                <div class="pair-row">
+                  <input type="number" id="sort" value="25" min="0" step="1" />
+                  <span class="pair-unit">₽</span>
+                </div>
               </div>
-            </div>
-            <div class="pair-card">
-              <div class="pair-k">Э</div>
-              <div class="pair-l">Эквайринг</div>
-              <div class="pair-row">
-                <input type="number" id="agency" value="0.12" min="0" step="0.01" />
-                <span class="pair-unit">₽</span>
+              <div class="pair-card">
+                <div class="pair-k">Э</div>
+                <div class="pair-l">Эквайринг</div>
+                <div class="pair-hint">Процент от цены</div>
+                <div class="pair-row">
+                  <input type="number" id="agency" value="0.12" min="0" step="0.01" />
+                  <span class="pair-unit">%</span>
+                </div>
               </div>
             </div>
           </div>
@@ -701,37 +728,12 @@
             </div>
           </div>
         </div>
-        <div class="field field-below">
-          <div class="name">Корректировка по минимальной прибыли<span class="hint">расчётные показатели по введённому SKU</span></div>
-          <div>
-            <div class="row" style="margin-bottom:10px">
-              <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted)">
-                SKU
-                <input type="text" id="corr-sku" value="ABC-1001" placeholder="Введите SKU" style="max-width:280px" />
-              </label>
-            </div>
-            <div class="stat-grid" style="margin:0; grid-template-columns: repeat(3, 1fr); max-width: 520px;">
-              <div class="stat">
-                <div class="lbl">% буста</div>
-                <div class="val" id="out-corr-boost">—</div>
-              </div>
-              <div class="stat">
-                <div class="lbl">% скидки</div>
-                <div class="val" id="out-corr-discount">—</div>
-              </div>
-              <div class="stat" id="stat-corr-margin">
-                <div class="lbl">Рассчитанная маржа</div>
-                <div class="val" id="out-corr-margin">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="card" id="s-excl">
         <h2>4. Список исключений для продажи на яндекс маркете</h2>
         <div class="field field-below">
-          <div class="name">Список SKU</div>
+          <div class="name">Список ID SKU</div>
           <div>
             <div class="upload-panel">
               <div class="upload-zone">
@@ -745,7 +747,7 @@
               </div>
               <div class="upload-paste">
                 <label for="excl-paste">Или вставить список вручную</label>
-                <textarea id="excl-paste" placeholder="Например:&#10;ABC-1001&#10;ABC-1002&#10;XYZ-55"></textarea>
+                <textarea id="excl-paste" placeholder="Например:&#10;2710634&#10;120045&#10;998877"></textarea>
                 <div class="upload-footer">
                   <div class="left">
                     <button type="button" class="primary-blue" id="excl-apply">Применить список</button>
@@ -763,11 +765,25 @@
             </div>
           </div>
         </div>
+        <div class="field field-below">
+          <div class="name">Исключения по атрибутам<span class="hint">вид, бренд, вид+бренд — как правила в разделе 5</span></div>
+          <div>
+            <table>
+              <thead><tr><th>Тип</th><th>Ключ</th><th></th></tr></thead>
+              <tbody id="excl-rules-body"></tbody>
+            </table>
+            <div class="rules-actions">
+              <button type="button" class="ghost" data-add-excl="brand">+ бренд</button>
+              <button type="button" class="ghost" data-add-excl="part">+ вид</button>
+              <button type="button" class="ghost" data-add-excl="brand_part">+ вид+бренд</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 4 скидки -->
       <section class="card" id="s5">
-        <h2>5. Скидки (СК)</h2>
+        <h2>5. Скидки (СКИДКА)</h2>
         <div class="field">
           <div class="name">Скидка база, ₽</div>
           <div><input type="number" id="sk-base" value="0" min="0" /></div>
@@ -796,7 +812,7 @@
           <div class="name">СКИДКА (правила)</div>
           <div>
             <table>
-              <thead><tr><th>Тип</th><th>Ключ</th><th>Скидка, ₽</th><th></th></tr></thead>
+              <thead><tr><th>Тип</th><th>Ключ</th><th>Скидка, ₽</th><th>Формула</th><th></th></tr></thead>
               <tbody id="discount-body"></tbody>
             </table>
             <div class="rules-actions">
@@ -837,17 +853,12 @@
       <section class="card" id="s8">
         <h2>7. Тест расчёта SKU</h2>
         <div class="field">
-          <div class="name">SKU<span class="hint">артикул для проверки расчёта</span></div>
+          <div class="name">ID SKU<span class="hint">артикул для проверки расчёта</span></div>
           <div>
-            <input type="text" id="sku-code" value="ABC-1001" placeholder="Введите SKU" style="max-width:280px" />
+            <input type="text" id="sku-code" value="2710634" placeholder="Введите SKU" style="max-width:280px" />
           </div>
         </div>
-        <div class="field">
-          <div class="name">ЗЦ, ₽<span class="hint">(закупочная цена)</span></div>
-          <div>
-            <input type="number" id="cogs" value="460" step="0.01" style="max-width:160px" />
-          </div>
-        </div>
+        <input type="hidden" id="cogs" value="460" />
         <div class="field">
           <div class="name">P на витрине (проверка)</div>
           <div><input type="number" id="price" value="1300" step="1" style="max-width:140px" /></div>
@@ -864,6 +875,44 @@
           <thead><tr><th>Статья</th><th>₽ / значение</th></tr></thead>
           <tbody id="break-body"></tbody>
         </table>
+
+        <div class="field field-below">
+          <div class="leg">
+            <div class="leg-title">Корректировка по минимальной прибыли<span class="hint">расчётные показатели по введённому SKU</span></div>
+            <div class="row" style="margin-bottom:12px">
+              <label class="leg-input">
+                ID SKU
+                <input type="text" id="corr-sku" value="2710634" placeholder="Введите SKU" style="max-width:280px" />
+              </label>
+            </div>
+            <div class="pair-stack pair-stack-wide pair-stack-3">
+              <div class="pair-card">
+                <div class="pair-k">БУСТ</div>
+                <div class="pair-l">% буста</div>
+                <div class="pair-hint">По правилам буста для SKU</div>
+                <div class="pair-row">
+                  <span class="pair-val" id="out-corr-boost">—</span>
+                </div>
+              </div>
+              <div class="pair-card">
+                <div class="pair-k">СК</div>
+                <div class="pair-l">% скидки</div>
+                <div class="pair-hint">Доля скидки от цены P</div>
+                <div class="pair-row">
+                  <span class="pair-val" id="out-corr-discount">—</span>
+                </div>
+              </div>
+              <div class="pair-card" id="stat-corr-margin">
+                <div class="pair-k">МАРЖА</div>
+                <div class="pair-l">Рассчитанная маржа</div>
+                <div class="pair-hint">Прибыль @ P / P</div>
+                <div class="pair-row">
+                  <span class="pair-val" id="out-corr-margin">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 9 -->
@@ -936,8 +985,8 @@
         { set: "ym-promo", bid: 8 },
       ],
       discounts: [
-        { type: "brand", key: "stellox", value: 0 },
-        { type: "set", key: "ym-promo", value: 30 },
+        { type: "brand", key: "stellox", value: 0, formula: "(РЦ-ЗЦ)*0,7" },
+        { type: "set", key: "ym-promo", value: 30, formula: "" },
       ],
       markups: [
         { type: "part", key: "lights", value: 40 },
@@ -945,6 +994,7 @@
       ],
       nc: [],
       exclusions: [],
+      exclRules: [],
       pushSkus: [],
     };
 
@@ -974,7 +1024,8 @@
       }).join("");
     }
 
-    function renderTypedRules(tbodyId, rows) {
+    function renderTypedRules(tbodyId, rows, opts) {
+      const withFormula = !!(opts && opts.withFormula);
       const tb = $(tbodyId);
       const typeLabel = {
         brand: "бренд",
@@ -1009,10 +1060,40 @@
             <select data-i="${i}" data-f="keySet">${optList(SETS, s)}</select>
           </span>`;
         }
+        const formula = String(r.formula ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/</g, "&lt;");
+        const formulaCell = withFormula
+          ? `<td><input type="text" data-i="${i}" data-f="formula" value="${formula}" placeholder="(РЦ-ЗЦ)*0,7" style="max-width:180px; font-family:var(--mono); font-size:12.5px" /></td>`
+          : "";
         return `<tr>
           <td>${typeLabel[r.type] || r.type}</td>
           <td>${key}</td>
           <td><input type="number" step="0.01" data-i="${i}" data-f="value" value="${r.value}" style="max-width:100px" /></td>
+          ${formulaCell}
+          <td><button type="button" class="danger" data-del="${i}">×</button></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function renderExclRules(tbodyId, rows) {
+      const tb = $(tbodyId);
+      const typeLabel = { brand: "бренд", part: "вид", brand_part: "вид+бренд" };
+      tb.innerHTML = rows.map((r, i) => {
+        let key = "";
+        if (r.type === "brand") key = `<select data-i="${i}" data-f="key">${optList(BRANDS, r.key)}</select>`;
+        else if (r.type === "part") key = `<select data-i="${i}" data-f="key">${optList(PARTS, r.key)}</select>`;
+        else if (r.type === "brand_part") {
+          const [b, p] = (r.key || "stellox|filters").split("|");
+          key = `<span class="row">
+            <select data-i="${i}" data-f="keyBrand">${optList(BRANDS, b)}</select>
+            <select data-i="${i}" data-f="keyPart">${optList(PARTS, p)}</select>
+          </span>`;
+        }
+        return `<tr>
+          <td>${typeLabel[r.type] || r.type}</td>
+          <td>${key}</td>
           <td><button type="button" class="danger" data-del="${i}">×</button></td>
         </tr>`;
       }).join("");
@@ -1043,6 +1124,7 @@
         const i = +t.dataset.i;
         const row = state[arrName][i];
         if (t.dataset.f === "value") row.value = Number(t.value) || 0;
+        else if (t.dataset.f === "formula") row.formula = t.value;
         else if (t.dataset.f === "key") row.key = t.value;
         else if (t.dataset.f === "keyBrand" || t.dataset.f === "keyPart" || t.dataset.f === "keySet") {
           if (row.type === "brand_part") {
@@ -1135,8 +1217,9 @@
       renderKeyRows("m-part-body", state.mPart, "part");
       renderKeyRows("skb-body", state.skb, "brand");
       renderKeyRows("skt-body", state.skt, "part");
-      renderTypedRules("discount-body", state.discounts);
+      renderTypedRules("discount-body", state.discounts, { withFormula: true });
       renderTypedRules("markup-body", state.markups);
+      renderExclRules("excl-rules-body", state.exclRules);
       renderExclusions();
       renderPushSkus();
     }
@@ -1229,8 +1312,12 @@
       const mid = resolveMid();
       const pmPct = num("pm-first") / 100;
       const pmCap = num("pm-first-rub");
+      const pmCapLabel = $("pm-cap-label");
+      if (pmCapLabel) {
+        pmCapLabel.textContent = Number.isFinite(pmCap) ? String(Math.round(pmCap)) : "0";
+      }
       const sort = num("sort");
-      const agency = num("agency");
+      const agencyPct = num("agency") / 100;
       const xfer = 0;
       const boostRow = state.boosts.find((r) => r.set === setId);
       const boostPct = boostRow ? Number(boostRow.bid) || 0 : 0;
@@ -1239,18 +1326,15 @@
 
       const risk = 0;
       const pmThresh = pmPct > 0 && pmCap > 0 ? pmCap / pmPct : Infinity;
-      const b = mid + sort + agency + risk;
+      const b = mid + sort + risk;
 
       const cheapForMin = false;
       const floor = num("p-floor");
-      let a = cheapForMin ? 0.42 + xfer + boost + pmPct : fee + 0.05 + xfer + boost + pmPct;
+      let a = cheapForMin
+        ? 0.42 + xfer + boost + pmPct + agencyPct
+        : fee + xfer + boost + pmPct + agencyPct;
       let bUsed = b;
       let pMin = a >= 1 ? NaN : (M + C + bUsed - discount + markup) / (1 - a);
-      if (!cheapForMin && Number.isFinite(pMin) && pMin > 20000) {
-        a = fee + xfer + boost + pmPct;
-        bUsed = b + 1000;
-        pMin = a >= 1 ? NaN : (M + C + bUsed - discount + markup) / (1 - a);
-      }
       if (Number.isFinite(pMin) && pMin > pmThresh) {
         a -= pmPct;
         bUsed += pmCap;
@@ -1265,24 +1349,23 @@
 
       // direct at P
       const useCheap = P <= 300 && liters <= 5;
-      let feeRub, last, midAmt, aP;
+      let feeRub, midAmt, aP;
       const pmRub = round2(pmCap > 0 && pmPct > 0 ? Math.min(P * pmPct, pmCap) : P * pmPct);
       if (useCheap) {
-        aP = 0.42 + xfer + boost + pmPct;
+        aP = 0.42 + xfer + boost + pmPct + agencyPct;
         feeRub = round2(P * 0.42);
-        last = 0;
         midAmt = 0;
       } else {
-        last = P > 20000 ? 1000 : Math.min(P * 0.05, 1000);
         midAmt = mid;
         feeRub = round2(P * fee);
-        aP = fee + (P > 20000 ? 0 : 0.05) + xfer + boost + pmPct;
+        aP = fee + xfer + boost + pmPct + agencyPct;
       }
       const xferRub = round2(P * xfer);
       const boostRub = round2(P * boost);
+      const agencyRub = round2(P * agencyPct);
       const ret = useCheap
-        ? round2(aP * P + (sort + agency + risk))
-        : round2(feeRub + last + pmRub + midAmt + sort + agency + xferRub + boostRub + risk);
+        ? round2(aP * P + (sort + risk))
+        : round2(feeRub + pmRub + midAmt + sort + agencyRub + xferRub + boostRub + risk);
       const profit = round2(P - ret - C);
       const discountPct = P > 0 ? round2((discount / P) * 100) : 0;
       const marginPct = P > 0 ? round2((profit / P) * 100) : 0;
@@ -1296,18 +1379,18 @@
       $("out-corr-boost").textContent = boostPct.toFixed(2) + " %";
       $("out-corr-discount").textContent = discountPct.toFixed(2) + " %";
       $("out-corr-margin").textContent = marginPct.toFixed(2) + " %";
-      $("stat-corr-margin").className = "stat " + (profit >= M - 0.5 ? "ok" : "warn");
+      $("stat-corr-margin").className = "pair-card " + (profit >= M - 0.5 ? "ok" : "warn");
 
       const rows = [
         ["К", feeRub],
-        ["Доставка покупателю", round2(last)],
         ["ПМ", useCheap ? 0 : pmRub],
         ["СМ", midAmt],
         ["П (приём)", round2(sort)],
-        ["Э (эквайринг)", round2(agency)],
+        ["Э (эквайринг)", agencyRub],
         ["Скидка", round2(discount)],
         ["Наценка", round2(markup)],
         ["Удержания", ret],
+        ["РЦ (розничная цена)", 0],
         ["ЗЦ (закупочная цена)", C],
         ["M (целевая прибыль)", round2(M)],
         ["Прибыль", profit],
@@ -1315,8 +1398,6 @@
       $("break-body").innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td>${Number(v).toFixed(2)}</td></tr>`).join("");
 
       syncMidLabels();
-      const Lshow = 1;
-      $("mid-calc-hint").textContent = `→ СМ ${midFromLiters(Lshow)} ₽`;
     }
 
     function toast(msg) {
@@ -1331,6 +1412,7 @@
     bindSimpleTable("skt-body", "skt", "part");
     bindTypedTable("discount-body", "discounts");
     bindTypedTable("markup-body", "markups");
+    bindTypedTable("excl-rules-body", "exclRules");
 
     {
       const tb = $("excl-body");
@@ -1429,7 +1511,7 @@
         else if (type === "brand_part") key = "stellox|filters";
         else if (type === "part_set") key = "filters|yandex-1";
         else if (type === "brand_part_set") key = "stellox|filters|yandex-1";
-        state.discounts.push({ type, key, value: 10 });
+        state.discounts.push({ type, key, value: 10, formula: "" });
         refreshRules();
         calc();
       };
@@ -1449,6 +1531,18 @@
         calc();
       };
     });
+    document.querySelectorAll("[data-add-excl]").forEach((btn) => {
+      btn.onclick = () => {
+        const type = btn.dataset.addExcl;
+        let key = "stellox|filters";
+        if (type === "brand") key = "stellox";
+        else if (type === "part") key = "filters";
+        else if (type === "brand_part") key = "stellox|filters";
+        state.exclRules.push({ type, key });
+        refreshRules();
+        calc();
+      };
+    });
 
     [
       "cogs", "price", "p-floor", "fee-custom", "pm-first", "pm-first-rub",
@@ -1464,8 +1558,8 @@
     $("corr-sku").addEventListener("input", () => { $("sku-code").value = $("corr-sku").value; });
     $("sku-code").addEventListener("input", () => { $("corr-sku").value = $("sku-code").value; });
 
-    $("btn-save").onclick = () => toast("Mock: сохранено в ym_price_management");
-    $("btn-recalc").onclick = () => toast("Mock: пересчёт всех товаров → P в Shop → F-PRICE-SYNC");
+    $("btn-save").onclick = () => toast("Сохранено");
+    $("btn-recalc").onclick = () => toast("Пересчитано");
 
     // sidebar: expand Ценообразование + active link
     const navPricing = document.getElementById("nav-pricing");
