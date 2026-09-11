@@ -51,3 +51,4 @@
 - Индекс папок: [WORKSPACE-INDEX.md](WORKSPACE-INDEX.md)
 - Логика структуры: [meta/FOLDER-LOGIC.md](meta/FOLDER-LOGIC.md)
 - Статус фич: [features/STATUS.md](features/STATUS.md)
+- HTML-прототипы UI: [research/briefs/page/](research/briefs/page/) → GitHub Pages https://fefelovandrey.github.io/RULI_YM/ym-price-mgmt-ui-example.html

@@ -128,6 +128,13 @@ Playbook агентов: router, lanes, handoff-схемы.
 
 Правила Cursor для этого workspace: слои, Tracker read-only, запрет коммита секретов.
 
+### `.github/`
+
+Только CI репозитория, не контент смысловой модели.
+
+- `workflows/pages.yml` публикует `research/briefs/page/` как GitHub Pages (корень сайта = эта папка).
+- Не копировать HTML в `docs/` и не дублировать прототипы в корне repo.
+
 ---
 
 ## 4. Соглашения об идентификаторах
@@ -171,6 +178,10 @@ Playbook агентов: router, lanes, handoff-схемы.
 ---
 
 ## 7. Changelog логики
+
+### 0.1.1 — 2026-09-11
+
+- `.github/workflows/pages.yml`: публикация HTML-прототипов из `research/briefs/page/` на GitHub Pages.
 
 ### 0.1 — 2026-08-24
 
