@@ -1,0 +1,42 @@
+@startuml ym-fee-daily-sequence-7-1
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor "Пользователь" as User
+participant "UI RULI" as UI
+participant "Backend RULI" as BE
+database "БД RULI" as DB
+participant "Яндекс Маркет\nPartner API" as YM
+
+
+== Суточный job (Backend) ==
+BE -> BE: Запуск процесса получения данных\n (cron 1× / сутки)
+
+loop пачки offerIds (limit ≤ 100)
+  BE -> YM: POST /v2/businesses/861370/offer-mappings
+  YM --> BE: marketCategoryId, marketCategoryName
+  BE -> BE: Валидация: marketCategoryId, marketCategoryName
+  BE -> DB: INSERT/UPDATE товар ↔ категория
+end
+
+loop по marketCategoryId
+  BE -> YM: POST /v2/tariffs/calculate\n(marketCategoryId=categoryId)
+  YM --> BE: FEE (value)
+  BE -> BE: Валидация FEE
+  BE -> DB: INSERT/UPDATE процента размещения
+end
+
+== Экран комиссий ==
+User -> UI: Открыть «Комиссии по категориям»
+UI -> BE: GET /ym/fee-categories
+BE -> DB: SELECT name, fee_pct, …
+DB --> BE: rows
+BE --> UI: marketCategoryName + FEE%
+UI --> User: таблица категорий и К%
+
+note over UI, YM
+  UI не обращается к api.partner.market.yandex.ru
+end note
+
+@enduml
