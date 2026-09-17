@@ -51,7 +51,7 @@
       background-attachment: fixed;
       -webkit-font-smoothing: antialiased;
     }
-    .layout { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+    .layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       .sidebar { position: sticky; top: 0; z-index: 5; }
@@ -87,7 +87,8 @@
     .sidebar nav a {
       display: block; color: inherit; text-decoration: none;
       padding: 8px 12px; border-radius: 8px; font-size: 13px;
-      font-weight: 500; transition: background .15s ease, color .15s ease;
+      font-weight: 500; white-space: nowrap;
+      transition: background .15s ease, color .15s ease;
     }
     .sidebar nav a:hover { background: var(--sidebar-elev); color: #e2e8f0; }
     .sidebar nav a.active { background: var(--sidebar-active); color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
@@ -556,15 +557,16 @@
             <a href="#s1">1. Яндекс цена</a>
             <a href="#s2">2. Тарифы FBS</a>
             <a href="#s3">3. Прибыль M</a>
-            <a href="#s-excl">4. Список исключений</a>
-            <a href="#s5">5. Скидки</a>
-            <a href="#s6">6. Наценки</a>
-            <a href="#s8">7. Тест SKU</a>
+            <a href="#s5">4. Скидки</a>
+            <a href="#s6">5. Наценки</a>
+            <a href="#s8">6. Тест SKU</a>
           </div>
         </div>
-        <a href="ym-fee-categories.html">Комиссии по категориям</a>
-        <a href="ym-export.html">Выгрузка на ЯМ</a>
         <a href="ym-boost.html">Буст</a>
+        <a href="ym-fee-categories.html">Комиссии по категориям</a>
+        <div class="nav-sec">Выгрузка</div>
+        <a href="ym-exclusions.html">Исключение из продажи на ЯМ</a>
+        <a href="ym-export.html">Выгрузка на ЯМ</a>
       </nav>
     </aside>
 
@@ -730,60 +732,9 @@
         </div>
       </section>
 
-      <section class="card" id="s-excl">
-        <h2>4. Список исключений для продажи на яндекс маркете</h2>
-        <div class="field field-below">
-          <div class="name">Список ID SKU</div>
-          <div>
-            <div class="upload-panel">
-              <div class="upload-zone">
-                <p class="upload-zone-title">Загрузить из файла</p>
-                <p class="upload-zone-hint">Поддерживаются txt и csv. Один артикул в строке или через точку с запятой / запятую.</p>
-                <div class="upload-pick">
-                  <input type="file" id="excl-file" accept=".txt,.csv,text/plain,text/csv" />
-                  <label for="excl-file" class="btn-file">Выбрать файл</label>
-                  <span class="file-name" id="excl-file-name">Файл не выбран</span>
-                </div>
-              </div>
-              <div class="upload-paste">
-                <label for="excl-paste">Или вставить список вручную</label>
-                <textarea id="excl-paste" placeholder="Например:&#10;2710634&#10;120045&#10;998877"></textarea>
-                <div class="upload-footer">
-                  <div class="left">
-                    <button type="button" class="primary-blue" id="excl-apply">Применить список</button>
-                    <button type="button" class="ghost" id="excl-clear">Очистить</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="sku-meta" id="excl-meta">В списке: 0 позиций</div>
-            <div class="sku-list" id="excl-list-wrap" hidden>
-              <table>
-                <thead><tr><th>№</th><th>Артикул (SKU)</th><th></th></tr></thead>
-                <tbody id="excl-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="field field-below">
-          <div class="name">Исключения по атрибутам<span class="hint">вид, бренд, вид+бренд — как правила в разделе 5</span></div>
-          <div>
-            <table>
-              <thead><tr><th>Тип</th><th>Ключ</th><th></th></tr></thead>
-              <tbody id="excl-rules-body"></tbody>
-            </table>
-            <div class="rules-actions">
-              <button type="button" class="ghost" data-add-excl="brand">+ бренд</button>
-              <button type="button" class="ghost" data-add-excl="part">+ вид</button>
-              <button type="button" class="ghost" data-add-excl="brand_part">+ вид+бренд</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- 4 скидки -->
       <section class="card" id="s5">
-        <h2>5. Скидки (СКИДКА)</h2>
+        <h2>4. Скидки (СКИДКА)</h2>
         <div class="field">
           <div class="name">Скидка база, ₽</div>
           <div><input type="number" id="sk-base" value="0" min="0" /></div>
@@ -829,7 +780,7 @@
 
       <!-- 6 наценки -->
       <section class="card" id="s6">
-        <h2>6. Наценки (НАЦЕНКА)</h2>
+        <h2>5. Наценки (НАЦЕНКА)</h2>
         <div class="field">
           <div class="name">НАЦЕНКА (правила)</div>
           <div>
@@ -851,7 +802,7 @@
 
       <!-- 8 тест -->
       <section class="card" id="s8">
-        <h2>7. Тест расчёта SKU</h2>
+        <h2>6. Тест расчёта SKU</h2>
         <div class="field">
           <div class="name">ID SKU<span class="hint">артикул для проверки расчёта</span></div>
           <div>
@@ -954,8 +905,6 @@
         { type: "set", key: "yandex-1", value: 0 },
       ],
       nc: [],
-      exclusions: [],
-      exclRules: [],
     };
 
     function $(id) { return document.getElementById(id); }
@@ -1037,28 +986,6 @@
       }).join("");
     }
 
-    function renderExclRules(tbodyId, rows) {
-      const tb = $(tbodyId);
-      const typeLabel = { brand: "бренд", part: "вид", brand_part: "вид+бренд" };
-      tb.innerHTML = rows.map((r, i) => {
-        let key = "";
-        if (r.type === "brand") key = `<select data-i="${i}" data-f="key">${optList(BRANDS, r.key)}</select>`;
-        else if (r.type === "part") key = `<select data-i="${i}" data-f="key">${optList(PARTS, r.key)}</select>`;
-        else if (r.type === "brand_part") {
-          const [b, p] = (r.key || "stellox|filters").split("|");
-          key = `<span class="row">
-            <select data-i="${i}" data-f="keyBrand">${optList(BRANDS, b)}</select>
-            <select data-i="${i}" data-f="keyPart">${optList(PARTS, p)}</select>
-          </span>`;
-        }
-        return `<tr>
-          <td>${typeLabel[r.type] || r.type}</td>
-          <td>${key}</td>
-          <td><button type="button" class="danger" data-del="${i}">×</button></td>
-        </tr>`;
-      }).join("");
-    }
-
     function bindSimpleTable(tbodyId, arrName, kind) {
       const tb = $(tbodyId);
       tb.onchange = (e) => {
@@ -1113,52 +1040,12 @@
       };
     }
 
-    function parseSkuList(text) {
-      const raw = String(text || "")
-        .split(/[\n\r;,\t]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const seen = new Set();
-      const out = [];
-      for (const s of raw) {
-        const key = s.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push(s);
-      }
-      return out;
-    }
-
-    function renderExclusions() {
-      const tb = $("excl-body");
-      const wrap = $("excl-list-wrap");
-      const meta = $("excl-meta");
-      const rows = state.exclusions;
-      meta.textContent = rows.length
-        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}`
-        : "В списке: 0 позиций";
-      wrap.hidden = rows.length === 0;
-      tb.innerHTML = rows.map((sku, i) => `<tr>
-        <td class="mono">${i + 1}</td>
-        <td class="mono">${sku}</td>
-        <td><button type="button" class="danger" data-del="${i}" title="Удалить">×</button></td>
-      </tr>`).join("");
-    }
-
-    function setExclusions(list) {
-      state.exclusions = list;
-      renderExclusions();
-      toast(list.length ? `Загружено артикулов: ${list.length}` : "Список очищен");
-    }
-
     function refreshRules() {
       renderKeyRows("m-part-body", state.mPart, "part");
       renderKeyRows("skb-body", state.skb, "brand");
       renderKeyRows("skt-body", state.skt, "part");
       renderTypedRules("discount-body", state.discounts, { withFormula: true });
       renderTypedRules("markup-body", state.markups);
-      renderExclRules("excl-rules-body", state.exclRules);
-      renderExclusions();
     }
 
     function syncMidLabels() {
@@ -1347,45 +1234,6 @@
     bindSimpleTable("skt-body", "skt", "part");
     bindTypedTable("discount-body", "discounts");
     bindTypedTable("markup-body", "markups");
-    bindTypedTable("excl-rules-body", "exclRules");
-
-    {
-      const tb = $("excl-body");
-      tb.onclick = (e) => {
-        if (e.target.dataset.del != null) {
-          state.exclusions.splice(+e.target.dataset.del, 1);
-          renderExclusions();
-        }
-      };
-    }
-
-    $("excl-file").onchange = (e) => {
-      const file = e.target.files && e.target.files[0];
-      const nameEl = $("excl-file-name");
-      if (!file) {
-        nameEl.textContent = "Файл не выбран";
-        nameEl.classList.remove("has-file");
-        return;
-      }
-      nameEl.textContent = file.name;
-      nameEl.classList.add("has-file");
-      const reader = new FileReader();
-      reader.onload = () => {
-        const list = parseSkuList(reader.result);
-        $("excl-paste").value = list.join("\n");
-        setExclusions(list);
-      };
-      reader.readAsText(file, "UTF-8");
-    };
-    $("excl-apply").onclick = () => setExclusions(parseSkuList($("excl-paste").value));
-    $("excl-clear").onclick = () => {
-      $("excl-paste").value = "";
-      $("excl-file").value = "";
-      const nameEl = $("excl-file-name");
-      nameEl.textContent = "Файл не выбран";
-      nameEl.classList.remove("has-file");
-      setExclusions([]);
-    };
 
     $("add-m-part").onclick = () => { state.mPart.push({ part: "filters", value: 100 }); refreshRules(); calc(); };
     $("add-skb").onclick = () => { state.skb.push({ brand: "stellox", value: 10 }); refreshRules(); calc(); };
@@ -1417,18 +1265,6 @@
         else if (type === "part_set") key = "filters|yandex-1";
         else if (type === "brand_part_set") key = "stellox|filters|yandex-1";
         state.markups.push({ type, key, value: 10 });
-        refreshRules();
-        calc();
-      };
-    });
-    document.querySelectorAll("[data-add-excl]").forEach((btn) => {
-      btn.onclick = () => {
-        const type = btn.dataset.addExcl;
-        let key = "stellox|filters";
-        if (type === "brand") key = "stellox";
-        else if (type === "part") key = "filters";
-        else if (type === "brand_part") key = "stellox|filters";
-        state.exclRules.push({ type, key });
         refreshRules();
         calc();
       };
