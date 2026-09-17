@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Выгрузка на ЯМ</title>
+  <title>Исключение из продажи на ЯМ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -137,29 +137,33 @@
     .card {
       background: var(--panel); border: 1px solid rgba(226, 232, 240, 0.95);
       border-radius: 16px; padding: 20px 22px 18px; margin-bottom: 16px;
-      box-shadow: var(--shadow-md); transition: box-shadow .2s ease;
+      box-shadow: var(--shadow-md);
     }
-    .card:hover { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04); }
     .card h2 {
       margin: 0 0 14px; font-family: var(--display); font-size: 16px; font-weight: 700;
       letter-spacing: -0.02em; padding-bottom: 12px; border-bottom: 1px solid var(--line);
     }
     .card .sub { color: var(--muted); font-size: 12.5px; margin: -6px 0 14px; }
     .field {
-      display: grid; grid-template-columns: 1fr; gap: 12px; padding: 4px 0;
+      display: grid; grid-template-columns: 1fr; gap: 12px; padding: 14px 0 0;
+      border-top: 1px solid #f1f5f9;
     }
+    .field:first-of-type { border-top: 0; padding-top: 0; }
     .field .name { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
-    textarea {
-      width: 100%; font: inherit; padding: 10px 12px;
+    .field .hint { display: block; font-weight: 400; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    select, textarea, input[type="text"] {
+      width: 100%; max-width: 480px; font: inherit; padding: 10px 12px;
       border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; color: var(--ink);
-      resize: vertical; min-height: 96px;
     }
-    textarea:focus {
+    select { max-width: 220px; }
+    textarea { resize: vertical; min-height: 96px; }
+    textarea:focus, select:focus, input:focus {
       outline: none; border-color: var(--focus);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
     }
     table {
-      width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px;
+      width: 100%; max-width: 760px; border-collapse: separate; border-spacing: 0; font-size: 13px;
       overflow: hidden; border-radius: 10px; border: 1px solid var(--line);
     }
     th, td {
@@ -170,8 +174,8 @@
       text-transform: uppercase; letter-spacing: 0.04em;
     }
     tr:last-child td { border-bottom: 0; }
-    tbody tr:hover { background: #f8fafc; }
     .mono { font-family: var(--mono); font-size: 12.5px; }
+    .rules-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
     .upload-panel {
       max-width: 580px;
@@ -232,7 +236,7 @@
       border: 1px solid var(--line); border-radius: 12px; background: #fff;
       max-width: 580px; box-shadow: var(--shadow-sm);
     }
-    .sku-list table { margin: 0; border: 0; border-radius: 0; }
+    .sku-list table { margin: 0; border: 0; border-radius: 0; max-width: none; }
     .sku-list th { position: sticky; top: 0; z-index: 1; }
     .sku-meta {
       font-size: 13px; color: var(--muted); margin: 10px 0 0;
@@ -250,8 +254,8 @@
         <a href="ym-boost.html">Буст</a>
         <a href="ym-fee-categories.html">Комиссии по категориям</a>
         <div class="nav-sec">Выгрузка</div>
-        <a href="ym-exclusions.html">Исключение из продажи на ЯМ</a>
-        <a href="ym-export.html" class="active">Выгрузка на ЯМ</a>
+        <a href="ym-exclusions.html" class="active">Исключение из продажи на ЯМ</a>
+        <a href="ym-export.html">Выгрузка на ЯМ</a>
       </nav>
     </aside>
 
@@ -259,7 +263,7 @@
       <header class="page-header">
         <div>
           <p class="page-kicker">Яндекс Маркет · FBS</p>
-          <h1 class="page-title">Выгрузка на ЯМ <span class="ym-mark">ЯМ</span></h1>
+          <h1 class="page-title">Исключение из продажи <span class="ym-mark">ЯМ</span></h1>
           <span class="page-title-accent" aria-hidden="true"></span>
         </div>
         <div class="toolbar">
@@ -268,9 +272,9 @@
         </div>
       </header>
 
-      <section class="card">
+      <section class="card" id="s-excl">
         <h2>Список ID SKU</h2>
-        <p class="sub">Подготовка списка артикулов для выгрузки цен на Яндекс Маркет</p>
+        <p class="sub">Файл со стоп-листом сохраняется до загрузки нового. Выгрузка на ЯМ — остаток 0 (mock).</p>
         <div class="field">
           <div>
             <div class="upload-panel">
@@ -278,28 +282,42 @@
                 <p class="upload-zone-title">Загрузить из файла</p>
                 <p class="upload-zone-hint">Поддерживаются txt и csv. Один артикул в строке или через точку с запятой / запятую.</p>
                 <div class="upload-pick">
-                  <input type="file" id="push-file" accept=".txt,.csv,text/plain,text/csv" />
-                  <label for="push-file" class="btn-file">Выбрать файл</label>
-                  <span class="file-name" id="push-file-name">Файл не выбран</span>
+                  <input type="file" id="excl-file" accept=".txt,.csv,text/plain,text/csv" />
+                  <label for="excl-file" class="btn-file">Выбрать файл</label>
+                  <span class="file-name" id="excl-file-name">Файл не выбран</span>
                 </div>
               </div>
               <div class="upload-paste">
-                <label for="push-paste">Или вставить список вручную</label>
-                <textarea id="push-paste" placeholder="Например:&#10;2710634&#10;120045&#10;998877"></textarea>
+                <label for="excl-paste">Или вставить список вручную</label>
+                <textarea id="excl-paste" placeholder="Например:&#10;2710634&#10;120045&#10;998877"></textarea>
                 <div class="upload-footer">
                   <div class="left">
-                    <button type="button" class="primary-blue" id="push-apply">Применить список</button>
-                    <button type="button" class="ghost" id="push-clear">Очистить</button>
+                    <button type="button" class="primary-blue" id="excl-apply">Применить список</button>
+                    <button type="button" class="ghost" id="excl-clear">Очистить</button>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="sku-meta" id="push-meta">В списке: 0 позиций</div>
-            <div class="sku-list" id="push-list-wrap" hidden>
+            <div class="sku-meta" id="excl-meta">В списке: 0 позиций</div>
+            <div class="sku-list" id="excl-list-wrap" hidden>
               <table>
                 <thead><tr><th>№</th><th>Артикул (ID SKU)</th><th></th></tr></thead>
-                <tbody id="push-body"></tbody>
+                <tbody id="excl-body"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="name">Исключения по атрибутам<span class="hint">вид, бренд, вид+бренд</span></div>
+          <div>
+            <table>
+              <thead><tr><th>Тип</th><th>Ключ</th><th></th></tr></thead>
+              <tbody id="excl-rules-body"></tbody>
+            </table>
+            <div class="rules-actions">
+              <button type="button" class="ghost" data-add-excl="brand">+ бренд</button>
+              <button type="button" class="ghost" data-add-excl="part">+ вид</button>
+              <button type="button" class="ghost" data-add-excl="brand_part">+ вид+бренд</button>
             </div>
           </div>
         </div>
@@ -308,13 +326,31 @@
   </div>
 
   <script>
-    const state = { pushSkus: [] };
+    const PARTS = [
+      { id: "filters", label: "Салонные фильтры" },
+      { id: "lights", label: "Фары" },
+    ];
+    const BRANDS = [
+      { id: "stellox", label: "STELLOX" },
+      { id: "bosch", label: "BOSCH" },
+      { id: "premium", label: "PremiumBrand" },
+    ];
+
+    const state = {
+      exclusions: [],
+      exclRules: [],
+      activeFileName: "",
+    };
 
     function $(id) { return document.getElementById(id); }
 
     function toast(msg) {
       $("toast").textContent = msg;
       setTimeout(() => { $("toast").textContent = ""; }, 2800);
+    }
+
+    function optList(list, selected) {
+      return list.map((x) => `<option value="${x.id}" ${x.id === selected ? "selected" : ""}>${x.label}</option>`).join("");
     }
 
     function parseSkuList(text) {
@@ -333,14 +369,15 @@
       return out;
     }
 
-    function renderPushSkus() {
-      const tb = $("push-body");
-      const wrap = $("push-list-wrap");
-      const meta = $("push-meta");
-      const rows = state.pushSkus;
+    function renderExclusions() {
+      const tb = $("excl-body");
+      const wrap = $("excl-list-wrap");
+      const meta = $("excl-meta");
+      const rows = state.exclusions;
+      const fileBit = state.activeFileName ? ` · файл: ${state.activeFileName}` : "";
       meta.textContent = rows.length
-        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}`
-        : "В списке: 0 позиций";
+        ? `В списке: ${rows.length} ${rows.length === 1 ? "позиция" : rows.length < 5 ? "позиции" : "позиций"}${fileBit}`
+        : `В списке: 0 позиций${fileBit}`;
       wrap.hidden = rows.length === 0;
       tb.innerHTML = rows.map((sku, i) => `<tr>
         <td class="mono">${i + 1}</td>
@@ -349,58 +386,118 @@
       </tr>`).join("");
     }
 
-    function setPushSkus(list) {
-      state.pushSkus = list;
-      renderPushSkus();
-      toast(list.length ? `К выгрузке: ${list.length}` : "Список выгрузки очищен");
+    function renderExclRules() {
+      const tb = $("excl-rules-body");
+      const typeLabel = { brand: "бренд", part: "вид", brand_part: "вид+бренд" };
+      tb.innerHTML = state.exclRules.map((r, i) => {
+        let key = "";
+        if (r.type === "brand") key = `<select data-i="${i}" data-f="key">${optList(BRANDS, r.key)}</select>`;
+        else if (r.type === "part") key = `<select data-i="${i}" data-f="key">${optList(PARTS, r.key)}</select>`;
+        else if (r.type === "brand_part") {
+          const [b, p] = (r.key || "stellox|filters").split("|");
+          key = `<span class="row">
+            <select data-i="${i}" data-f="keyBrand">${optList(BRANDS, b)}</select>
+            <select data-i="${i}" data-f="keyPart">${optList(PARTS, p)}</select>
+          </span>`;
+        }
+        return `<tr>
+          <td>${typeLabel[r.type] || r.type}</td>
+          <td>${key}</td>
+          <td><button type="button" class="danger" data-del="${i}">×</button></td>
+        </tr>`;
+      }).join("");
     }
 
-    function sendPush() {
-      if (!state.pushSkus.length) {
-        toast("Сначала добавьте SKU в список");
+    function setExclusions(list, opts) {
+      state.exclusions = list;
+      if (opts && Object.prototype.hasOwnProperty.call(opts, "fileName")) {
+        state.activeFileName = opts.fileName || "";
+        const nameEl = $("excl-file-name");
+        if (state.activeFileName) {
+          nameEl.textContent = state.activeFileName;
+          nameEl.classList.add("has-file");
+        }
+      }
+      renderExclusions();
+      toast(list.length
+        ? `Стоп-лист: ${list.length} SKU`
+        : "Список исключений очищен");
+    }
+
+    function sendExclusions() {
+      if (!state.exclusions.length && !state.exclRules.length) {
+        toast("Сначала добавьте SKU или правила исключений");
         return;
       }
-      toast(`Mock: выгрузка ${state.pushSkus.length} SKU на Яндекс Маркет`);
+      const skuBit = state.exclusions.length ? `${state.exclusions.length} SKU` : "";
+      const rulesBit = state.exclRules.length ? `${state.exclRules.length} правил` : "";
+      const parts = [skuBit, rulesBit].filter(Boolean).join(" + ");
+      toast(`Mock: выгрузка исключений (${parts}) · остаток 0 на ЯМ`);
     }
 
-    $("push-body").onclick = (e) => {
+    $("excl-body").onclick = (e) => {
       if (e.target.dataset.del != null) {
-        state.pushSkus.splice(+e.target.dataset.del, 1);
-        renderPushSkus();
+        state.exclusions.splice(+e.target.dataset.del, 1);
+        renderExclusions();
       }
     };
 
-    $("push-file").onchange = (e) => {
-      const file = e.target.files && e.target.files[0];
-      const nameEl = $("push-file-name");
-      if (!file) {
-        nameEl.textContent = "Файл не выбран";
-        nameEl.classList.remove("has-file");
-        return;
+    $("excl-rules-body").onchange = (e) => {
+      const t = e.target;
+      const i = +t.dataset.i;
+      const row = state.exclRules[i];
+      if (!row) return;
+      if (t.dataset.f === "key") row.key = t.value;
+      else if (t.dataset.f === "keyBrand" || t.dataset.f === "keyPart") {
+        const brand = $("excl-rules-body").querySelector(`select[data-i="${i}"][data-f="keyBrand"]`).value;
+        const part = $("excl-rules-body").querySelector(`select[data-i="${i}"][data-f="keyPart"]`).value;
+        row.key = brand + "|" + part;
       }
-      nameEl.textContent = file.name;
-      nameEl.classList.add("has-file");
+    };
+    $("excl-rules-body").onclick = (e) => {
+      if (e.target.dataset.del != null) {
+        state.exclRules.splice(+e.target.dataset.del, 1);
+        renderExclRules();
+      }
+    };
+
+    $("excl-file").onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
         const list = parseSkuList(reader.result);
-        $("push-paste").value = list.join("\n");
-        setPushSkus(list);
+        $("excl-paste").value = list.join("\n");
+        setExclusions(list, { fileName: file.name });
       };
       reader.readAsText(file, "UTF-8");
     };
 
-    $("push-apply").onclick = () => setPushSkus(parseSkuList($("push-paste").value));
-    $("push-clear").onclick = () => {
-      $("push-paste").value = "";
-      $("push-file").value = "";
-      const nameEl = $("push-file-name");
+    $("excl-apply").onclick = () => setExclusions(parseSkuList($("excl-paste").value));
+    $("excl-clear").onclick = () => {
+      $("excl-paste").value = "";
+      $("excl-file").value = "";
+      const nameEl = $("excl-file-name");
       nameEl.textContent = "Файл не выбран";
       nameEl.classList.remove("has-file");
-      setPushSkus([]);
+      state.activeFileName = "";
+      setExclusions([]);
     };
-    $("btn-send").onclick = sendPush;
+    $("btn-send").onclick = sendExclusions;
 
-    renderPushSkus();
+    document.querySelectorAll("[data-add-excl]").forEach((btn) => {
+      btn.onclick = () => {
+        const type = btn.dataset.addExcl;
+        let key = "stellox|filters";
+        if (type === "brand") key = "stellox";
+        else if (type === "part") key = "filters";
+        state.exclRules.push({ type, key });
+        renderExclRules();
+      };
+    });
+
+    renderExclusions();
+    renderExclRules();
   </script>
 </body>
 </html>
