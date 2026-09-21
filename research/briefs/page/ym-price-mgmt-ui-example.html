@@ -357,11 +357,56 @@
     .leg-input .leg-title { margin: 0 0 6px; }
     .mid-table { width: 100%; margin-top: 4px; }
     .mid-table th { white-space: nowrap; }
-    .mid-table td { font-size: 13px; }
+    .mid-table td { font-size: 13px; vertical-align: middle; }
+    .mid-table td:last-child { width: 40px; text-align: right; }
     .mid-table input {
       max-width: 76px; width: 76px; padding: 6px 8px; display: inline-block;
     }
+    .mid-table input[data-f="to"] { max-width: 88px; width: 88px; }
+    .mid-table input.mid-text {
+      width: auto;
+      min-width: 2em;
+      max-width: 100%;
+      padding: 4px 6px;
+      border-color: transparent;
+      background: transparent;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      flex: 0 1 auto;
+    }
+    .mid-table input.mid-text:hover,
+    .mid-table input.mid-text:focus {
+      border-color: var(--line-strong);
+      background: #fff;
+    }
+    .mid-table input.mid-text-lg { min-width: 14em; width: 100%; max-width: 340px; }
     .mid-inline { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .mid-fixed { color: inherit; white-space: nowrap; }
+    .mid-vol {
+      display: block;
+      width: 100%;
+      padding: 2px 0;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+    .mid-vol:focus-within {
+      border-color: transparent;
+      background: transparent;
+    }
+    .mid-vol input.mid-text {
+      width: 100%;
+      max-width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .mid-vol input.mid-text:hover,
+    .mid-vol input.mid-text:focus {
+      border-color: var(--line-strong);
+      background: #fff;
+    }
 
     .pair-stack {
       display: grid;
@@ -646,40 +691,15 @@
               <p class="sub" style="margin:0 0 8px">локально (тот же населенный пункт) — СМ = 0 ₽</p>
               <table class="mid-table">
                 <thead>
-                  <tr><th>Объём товара, л</th><th>Тариф</th></tr>
+                  <tr><th>Объём товара, л</th><th>Тариф</th><th></th></tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td>до 1 л включительно</td>
-                    <td>
-                      <span class="mid-inline"><input type="number" id="mid-base" value="92" min="0" step="1" /> ₽</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>от 1,001 л до 200 л включительно</td>
-                    <td>
-                      <span class="mid-inline">
-                        <span id="mid-base-ref">92</span> ₽ + по
-                        <input type="number" id="mid-rate1" value="8" min="0" step="1" /> ₽
-                        за каждый литр сверх 1 л
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>от 200,001 л и больше</td>
-                    <td>
-                      <span class="mid-inline">
-                        <span id="mid-base-ref2">92</span> ₽ + по
-                        <span id="mid-rate1-ref">8</span> ₽ сверх 1 л + по
-                        <input type="number" id="mid-rate2" value="5" min="0" step="1" /> ₽
-                        сверх 200 л
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
+                <tbody id="mid-body"></tbody>
               </table>
+              <div class="rules-actions">
+                <button type="button" class="ghost" id="add-mid-tier">+ ступень</button>
+              </div>
               <div class="row" style="margin-top:10px">
-                <label>Потолок СМ <input type="number" id="mid-cap" value="5500" min="0" step="1" style="max-width:100px" /> ₽</label>
+                <label>Фикс СМ (не более) <input type="number" id="mid-cap" value="5500" min="0" step="1" style="max-width:100px" /> ₽</label>
               </div>
             </div>
           </div>
@@ -722,7 +742,7 @@
           <div class="name">M по виду</div>
           <div>
             <table>
-              <thead><tr><th>Вид (part)</th><th>M, ₽</th><th></th></tr></thead>
+              <thead><tr><th>вид запчасти</th><th>M, ₽</th><th></th></tr></thead>
               <tbody id="m-part-body"></tbody>
             </table>
             <div class="rules-actions">
@@ -892,6 +912,32 @@
       mPart: [{ part: "filters", value: 100 }, { part: "lights", value: 150 }],
       skb: [{ brand: "bosch", value: 20 }],
       skt: [],
+      midTiers: [
+        {
+          volumeText: "до 1 л включительно",
+          to: 1,
+          rate: 92,
+          open: false,
+          rateJoin: "",
+          rateAfter: "₽",
+        },
+        {
+          volumeText: "от 1,001 л до 200 л включительно",
+          to: 200,
+          rate: 8,
+          open: false,
+          rateJoin: "+ по",
+          rateAfter: "₽ за каждый литр сверх 1 л",
+        },
+        {
+          volumeText: "от 200,001 л и больше",
+          to: null,
+          rate: 5,
+          open: true,
+          rateJoin: "+ по",
+          rateAfter: "₽ сверх 200 л",
+        },
+      ],
       boosts: [
         { set: "yandex-1", bid: 6.57 },
         { set: "ym-promo", bid: 8 },
@@ -1046,27 +1092,148 @@
       renderKeyRows("skt-body", state.skt, "part");
       renderTypedRules("discount-body", state.discounts, { withFormula: true });
       renderTypedRules("markup-body", state.markups);
+      renderMidTiers();
     }
 
-    function syncMidLabels() {
-      const base = num("mid-base");
-      const r1 = num("mid-rate1");
-      $("mid-base-ref").textContent = String(base);
-      $("mid-base-ref2").textContent = String(base);
-      $("mid-rate1-ref").textContent = String(r1);
+    function fmtLit(n) {
+      const v = Number(n);
+      if (!Number.isFinite(v)) return "—";
+      return String(v).replace(".", ",");
+    }
+
+    function fmtLitFrom(prevTo) {
+      const v = Math.round((Number(prevTo) + 0.001) * 1000) / 1000;
+      return fmtLit(v);
+    }
+
+    function escAttr(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;");
+    }
+
+    function textSize(s, min, max) {
+      const n = Math.max(min || 2, Math.min(max || 48, String(s ?? "").length + 1));
+      return n;
+    }
+
+    function parseVolumeTo(text, open) {
+      if (open) return null;
+      const matches = String(text || "").match(/\d+(?:[.,]\d+)?/g);
+      if (!matches || !matches.length) return null;
+      const raw = matches[matches.length - 1].replace(",", ".");
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function renderMidTiers() {
+      const tb = $("mid-body");
+      const tiers = state.midTiers;
+      tb.innerHTML = tiers.map((t, i) => {
+        const volCell = `<span class="mid-vol">
+          <input type="text" class="mid-text mid-text-lg" data-i="${i}" data-f="volumeText"
+            size="${textSize(t.volumeText, 16, 48)}" value="${escAttr(t.volumeText)}" />
+        </span>`;
+
+        let tariffCell = "";
+        if (i === 0) {
+          tariffCell = `<span class="mid-inline">
+            <input type="number" data-i="${i}" data-f="rate" value="${t.rate}" min="0" step="1" />
+            <input type="text" class="mid-text" data-i="${i}" data-f="rateAfter" size="${textSize(t.rateAfter || "₽", 2, 20)}" value="${escAttr(t.rateAfter || "₽")}" />
+          </span>`;
+        } else {
+          const parts = [`<span data-mid-rate-ref="0">${fmtLit(tiers[0].rate)}</span> ₽`];
+          for (let j = 1; j < i; j++) {
+            parts.push(`+ по <span data-mid-rate-ref="${j}">${fmtLit(tiers[j].rate)}</span> ₽ сверх <span data-mid-bound-ref="${j - 1}">${fmtLit(tiers[j - 1].to)}</span> л`);
+          }
+          parts.push(`<span class="mid-fixed">+ по</span>`);
+          parts.push(`<input type="number" data-i="${i}" data-f="rate" value="${t.rate}" min="0" step="1" />`);
+          parts.push(`<input type="text" class="mid-text mid-text-lg" data-i="${i}" data-f="rateAfter" size="${textSize(t.rateAfter, 10, 36)}" value="${escAttr(t.rateAfter)}" />`);
+          tariffCell = `<span class="mid-inline">${parts.join(" ")}</span>`;
+        }
+
+        const canDelete = tiers.length > 1;
+        return `<tr>
+          <td>${volCell}</td>
+          <td>${tariffCell}</td>
+          <td>${canDelete ? `<button type="button" class="danger" data-del="${i}">×</button>` : ""}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function bindMidTable() {
+      const tb = $("mid-body");
+      const textFields = new Set(["volumeText", "rateAfter"]);
+      function syncMidRefs() {
+        state.midTiers.forEach((row, i) => {
+          tb.querySelectorAll(`[data-mid-rate-ref="${i}"]`).forEach((el) => {
+            el.textContent = fmtLit(row.rate);
+          });
+          tb.querySelectorAll(`[data-mid-bound-ref="${i}"]`).forEach((el) => {
+            el.textContent = fmtLit(row.to);
+          });
+        });
+      }
+      tb.addEventListener("input", (e) => {
+        const t = e.target;
+        if (!t.dataset || t.dataset.i === undefined) return;
+        const i = Number(t.dataset.i);
+        const row = state.midTiers[i];
+        if (!row) return;
+        const f = t.dataset.f;
+        if (textFields.has(f)) {
+          row[f] = t.value;
+          if (t.classList.contains("mid-text")) t.size = textSize(t.value, 2, 48);
+          if (f === "volumeText") {
+            const open = !!(row.open || /и больше/i.test(row.volumeText));
+            row.open = open;
+            row.to = parseVolumeTo(row.volumeText, open);
+            syncMidRefs();
+            calc();
+          }
+          return;
+        }
+        if (f === "rate") {
+          row.rate = Number(String(t.value).replace(",", ".")) || 0;
+          syncMidRefs();
+          calc();
+        }
+      });
+      tb.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-del]");
+        if (!btn) return;
+        const i = Number(btn.dataset.del);
+        if (state.midTiers.length <= 1) return;
+        state.midTiers.splice(i, 1);
+        const last = state.midTiers[state.midTiers.length - 1];
+        if (last) {
+          const prev = state.midTiers[state.midTiers.length - 2];
+          last.to = null;
+          last.open = true;
+          last.volumeText = prev ? `от ${fmtLitFrom(prev.to)} л и больше` : (last.volumeText || "и больше");
+        }
+        renderMidTiers();
+        calc();
+      });
     }
 
     function midFromLiters(L) {
-      const t1 = 1;
-      const t2 = 200;
-      const base = num("mid-base");
-      const r1 = num("mid-rate1");
-      const r2 = num("mid-rate2");
+      const tiers = state.midTiers;
+      if (!tiers.length) return 0;
       const cap = num("mid-cap") || 5500;
-      const liters = Math.max(t1, Math.ceil(L));
-      let mid = base;
-      if (liters > t1) mid += r1 * Math.min(liters - t1, Math.max(0, t2 - t1));
-      if (liters > t2) mid += r2 * (liters - t2);
+      const firstTo = Number(tiers[0].to);
+      const floorL = Number.isFinite(firstTo) && firstTo > 0 ? firstTo : 1;
+      const liters = Math.max(floorL, Math.ceil(L));
+      let mid = Number(tiers[0].rate) || 0;
+      for (let i = 1; i < tiers.length; i++) {
+        const prev = Number(tiers[i - 1].to);
+        if (!Number.isFinite(prev) || liters <= prev) break;
+        const currRaw = tiers[i].to;
+        const curr = currRaw == null || currRaw === "" ? Infinity : Number(currRaw);
+        const span = Math.min(liters, curr) - prev;
+        if (span > 0) mid += (Number(tiers[i].rate) || 0) * span;
+      }
       return Math.min(mid, cap);
     }
 
@@ -1218,8 +1385,6 @@
         ["Прибыль", profit],
       ];
       $("break-body").innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td>${Number(v).toFixed(2)}</td></tr>`).join("");
-
-      syncMidLabels();
     }
 
     function toast(msg) {
@@ -1234,10 +1399,36 @@
     bindSimpleTable("skt-body", "skt", "part");
     bindTypedTable("discount-body", "discounts");
     bindTypedTable("markup-body", "markups");
+    bindMidTable();
 
     $("add-m-part").onclick = () => { state.mPart.push({ part: "filters", value: 100 }); refreshRules(); calc(); };
     $("add-skb").onclick = () => { state.skb.push({ brand: "stellox", value: 10 }); refreshRules(); calc(); };
     $("add-skt").onclick = () => { state.skt.push({ part: "filters", value: 10 }); refreshRules(); calc(); };
+    $("add-mid-tier").onclick = () => {
+      const tiers = state.midTiers;
+      const last = tiers[tiers.length - 1];
+      if (last && (last.open || last.to == null || last.to === "")) {
+        const prev = tiers.length >= 2 ? Number(tiers[tiers.length - 2].to) : 0;
+        const nextTo = (Number.isFinite(prev) ? prev : 0) + 100;
+        last.to = nextTo;
+        last.open = false;
+        last.volumeText = tiers.length >= 2
+          ? `от ${fmtLitFrom(tiers[tiers.length - 2].to)} л до ${fmtLit(nextTo)} л включительно`
+          : `до ${fmtLit(nextTo)} л включительно`;
+        last.rateAfter = last.rateAfter || `₽ сверх ${fmtLit(tiers.length >= 2 ? tiers[tiers.length - 2].to : 0)} л`;
+      }
+      const bound = last ? last.to : 100;
+      tiers.push({
+        volumeText: `от ${fmtLitFrom(bound)} л и больше`,
+        to: null,
+        rate: 5,
+        open: true,
+        rateJoin: "+ по",
+        rateAfter: `₽ сверх ${fmtLit(bound)} л`,
+      });
+      renderMidTiers();
+      calc();
+    };
 
     document.querySelectorAll("[data-add-discount]").forEach((btn) => {
       btn.onclick = () => {
@@ -1272,7 +1463,7 @@
 
     [
       "cogs", "price", "p-floor", "fee-custom", "pm-first", "pm-first-rub",
-      "mid-base", "mid-rate1", "mid-rate2", "mid-cap",
+      "mid-cap",
       "m-default", "sk-base", "sort", "agency",
       "round-mode", "sku-code", "corr-sku",
     ].forEach((id) => {
