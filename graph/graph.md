@@ -9,7 +9,8 @@
          └────────── C-YM-API ──────────┘
 ```
 
-Уточняется после `research/briefs/reality-brief.md`.
+Прогон FBS: [../research/briefs/fbs-test-2026-09-01.md](../research/briefs/fbs-test-2026-09-01.md).  
+Витрина Postman 2026-09-02: [../research/briefs/postman-catalog-checklist.md](../research/briefs/postman-catalog-checklist.md).
 
 ## Волны
 
@@ -23,10 +24,10 @@
 
 | ID | Title | Wave | depends_on |
 |----|-------|------|------------|
-| F-CATALOG | Каталог / маппинг | W1 | C-YM-API |
-| F-PRICE-SYNC | Цены | W2 | C-YM-API, F-CATALOG |
-| F-STOCK-SYNC | Остатки | W2 | C-YM-API, F-CATALOG |
-| F-ORDERS | Заказы | W2 | C-YM-API, F-STOCK-SYNC |
+| F-CATALOG | Каталог / маппинг (**specified**, Postman 2026-09-02) | W1 | C-YM-API |
+| F-PRICE-SYNC | Цены (**specified**, только business-URL) | W2 | C-YM-API, F-CATALOG |
+| F-STOCK-SYNC | Остатки (**specified**, PUT + свежий updatedAt) | W2 | C-YM-API, F-CATALOG |
+| F-ORDERS | Заказы (**specified**, sandbox 2026-09-01) | W2 | C-YM-API, F-STOCK-SYNC, D-YM-FULFILLMENT |
 | F-RETURNS | Возвраты | W3 | F-ORDERS |
 
 ## Mermaid
@@ -36,7 +37,8 @@ flowchart LR
   C[C-YM-API] --> F1[F-CATALOG]
   F1 --> F2[F-PRICE-SYNC]
   F1 --> F3[F-STOCK-SYNC]
-  F3 --> F4[F-ORDERS]
+  D[D-YM-FULFILLMENT] --> F4[F-ORDERS]
+  F3 --> F4
   F4 --> F5[F-RETURNS]
   C --> F2
   C --> F3
