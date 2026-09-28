@@ -79,3 +79,31 @@ path: app/infra/kafka/consumers/wa_product_mapping_update/consumer.py
 symbol: consumer
 note: Kafka ru.ruli.products.wa.mp_card_update → Create/Delete WAProductMapping (id_1c, wa_id)
 ```
+
+## Срез 2026-09-24 — точки входа (нет хука для ЯМ)
+
+```text
+repo: WA / caroptics
+path: wa-apps/ozon/lib/cli/ozonHashedExportProducts.cli.php
+symbol: ozonHashedExportProductsCli
+note: Боевой cron. Сет ozon-24, лимит daily_update, hash ozon_products_hash,
+      чанк 100, ozonApi.exportProducts. Своего wa()->event после сборки нет.
+```
+
+```text
+repo: WA / caroptics
+path: wa-apps/ozon/lib/classes/product_handler/ozonProductsExport.class.php
+symbol: getProductsByIds / getOffers / generateOzonOffers
+note: Публичный выход — тело POST /v3/product/import, не нейтральная карточка Shop.
+      getOffers: JOIN feature 4/1/27/28/29 + ozon_category_parttype; status=1, price!=0;
+      GROUP BY product_id. Гейт type_id в CLI checkOffers. Вес г, габариты мм, кфц ovh_*.
+      Цена и vat внутри того же payload.
+```
+
+```text
+repo: WA / caroptics
+path: wa-apps/ozon/lib/handlers/
+symbol: ozonShop*Handler
+note: Ozon слушает события Shop (меню, заказ, карточка товара). Экспорт карточки
+      событие наружу не публикует.
+```

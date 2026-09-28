@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Буст — ЯМ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #f0f3f8;
+      --bg1: #e8eef7;
+      --panel: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --line-strong: #cbd5e1;
+      --accent: #ffcc00;
+      --accent-ink: #111827;
+      --ok: #059669;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --sidebar: #0b1220;
+      --sidebar-elev: #121a2b;
+      --sidebar-ink: #94a3b8;
+      --sidebar-active: #1e293b;
+      --focus: #2563eb;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
+      --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+      --radius-sm: 8px;
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Plus Jakarta Sans", "IBM Plex Sans", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      line-height: 1.5;
+      background:
+        radial-gradient(1200px 600px at 12% -10%, rgba(37, 99, 235, 0.08), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(255, 204, 0, 0.12), transparent 45%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 40%, #edf1f7 100%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+    .layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+    .sidebar {
+      background: linear-gradient(180deg, var(--sidebar) 0%, #0a101c 100%);
+      color: var(--sidebar-ink);
+      padding: 22px 14px 32px;
+      border-right: 1px solid rgba(148, 163, 184, 0.08);
+    }
+    .sidebar .brand {
+      color: #fff; font-family: var(--display); font-weight: 800; font-size: 15px;
+      letter-spacing: -0.02em; margin-bottom: 18px; padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(255,204,0,0.16), transparent 70%);
+      border: 1px solid rgba(255,204,0,0.18);
+    }
+    .sidebar .brand::after {
+      content: ""; display: block; width: 28px; height: 2px; margin-top: 8px;
+      border-radius: 2px; background: var(--accent);
+    }
+    .sidebar nav a {
+      display: block; color: inherit; text-decoration: none;
+      padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      white-space: nowrap;
+      transition: background .15s ease, color .15s ease;
+    }
+    .sidebar nav a:hover { background: var(--sidebar-elev); color: #e2e8f0; }
+    .sidebar nav a.active { background: var(--sidebar-active); color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
+    .sidebar .nav-sec {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+      color: #64748b; margin: 16px 10px 8px; font-weight: 600;
+    }
+    .main { padding: 32px 36px 72px; max-width: 1120px; }
+    @media (max-width: 720px) { .main { padding: 20px 16px 48px; } }
+    .page-header {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 16px;
+      margin: 0 0 28px; padding: 22px 24px 20px; border-radius: 16px;
+      background: rgba(255,255,255,0.72); border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: var(--shadow-sm); backdrop-filter: blur(10px);
+    }
+    .page-kicker {
+      margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    h1.page-title {
+      margin: 0; font-family: var(--display); font-size: clamp(28px, 3.4vw, 36px);
+      font-weight: 800; letter-spacing: -0.035em; line-height: 1.12; color: var(--ink);
+    }
+    h1.page-title .ym-mark {
+      display: inline-block; margin-left: 6px; padding: 3px 11px 5px; border-radius: 8px;
+      background: var(--accent); color: var(--accent-ink); font-weight: 800;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.06); vertical-align: middle;
+    }
+    .page-title-accent {
+      display: block; width: 40px; height: 3px; margin-top: 14px; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), rgba(255,204,0,0.15));
+    }
+    .toolbar {
+      display: flex; flex-wrap: nowrap; gap: 10px; align-items: center;
+      width: max-content; max-width: 100%; align-self: flex-start;
+    }
+    .page-header .toolbar button {
+      flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 16px;
+      border-radius: 10px; font-weight: 700;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .page-header .toolbar button:hover { transform: translateY(-1px); }
+    button {
+      font: inherit; cursor: pointer; border: 0; border-radius: var(--radius-sm);
+      padding: 8px 14px; background: var(--accent); color: var(--accent-ink); font-weight: 700;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+    }
+    button.ok { background: var(--ok); color: #fff; }
+    button.warn { background: var(--warn); color: #fff; }
+    button.danger {
+      background: #fff; border: 1px solid #fecaca; color: var(--danger);
+      font-weight: 600; padding: 7px 10px; font-size: 12px; box-shadow: none;
+    }
+    button.danger:hover { background: #fef2f2; }
+    #toast { font-size: 12.5px; color: var(--ok); font-weight: 600; }
+    .card {
+      background: var(--panel); border: 1px solid rgba(226, 232, 240, 0.95);
+      border-radius: 16px; padding: 20px 22px 18px; margin-bottom: 16px;
+      box-shadow: var(--shadow-md); transition: box-shadow .2s ease;
+    }
+    .card:hover { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04); }
+    .card h2 {
+      margin: 0 0 14px; font-family: var(--display); font-size: 16px; font-weight: 700;
+      letter-spacing: -0.02em; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+    }
+    .card .sub { color: var(--muted); font-size: 12.5px; margin: -6px 0 14px; }
+    .busts-head {
+      display: grid; grid-template-columns: minmax(280px, 1fr) 160px 100px;
+      gap: 12px; align-items: end; margin: 0 0 10px; padding: 0 2px;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .bust-row {
+      display: grid; grid-template-columns: minmax(280px, 1fr) 160px 100px;
+      gap: 12px; align-items: center; margin-bottom: 12px;
+    }
+    input[type="number"] {
+      width: 100%; font: inherit; padding: 10px 12px;
+      border: 1px solid var(--line-strong); border-radius: 10px; background: #fff; color: var(--ink);
+      box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.02);
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    input[type="number"]:hover { border-color: #94a3b8; }
+    input:focus {
+      outline: none; border-color: var(--focus);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    }
+    .csv-cell {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+      background: linear-gradient(180deg, #fff, #f8fafc); box-shadow: var(--shadow-sm);
+    }
+    .csv-cell input[type="file"] {
+      position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
+    }
+    .btn-file {
+      display: inline-flex; align-items: center; padding: 8px 12px;
+      border-radius: 10px; border: 1px solid var(--line-strong); background: #fff;
+      color: var(--ink); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-file:hover { background: #f8fafc; border-color: #94a3b8; }
+    .csv-meta { font-size: 13px; color: var(--muted); min-width: 0; }
+    .csv-meta.has-file { color: var(--ink); font-weight: 700; }
+    .csv-hint { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+    .empty {
+      padding: 22px 14px; border: 1px dashed var(--line-strong); border-radius: 12px;
+      color: var(--muted); font-size: 13px; text-align: center; background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Яндекс Маркет · RULI</div>
+      <div class="nav-sec">Приложение ym</div>
+      <nav>
+        <a href="ym-price-mgmt-ui-example.html">← Ценообразование</a>
+        <a href="ym-boost.html" class="active">Буст</a>
+        <a href="ym-fee-categories.html">Комиссии по категориям</a>
+        <div class="nav-sec">Выгрузка</div>
+        <a href="ym-exclusions.html">Исключение из продажи на ЯМ</a>
+        <a href="ym-export.html">Выгрузка на ЯМ</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <p class="page-kicker">Яндекс Маркет · плагин ym</p>
+          <h1 class="page-title">Буст <span class="ym-mark">ЯМ</span></h1>
+          <span class="page-title-accent" aria-hidden="true"></span>
+        </div>
+        <div class="toolbar">
+          <button type="button" class="ok" id="btn-add">Добавить новый буст</button>
+          <button type="button" id="btn-save" class="ok">Сохранить</button>
+          <span id="toast"></span>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Настройки буста</h2>
+        <p class="sub">CSV по ID SKU + процент маржи (ставка). В CSV — один артикул в строке или через `;` / `,`.</p>
+
+        <div id="busts-wrap">
+          <div class="busts-head" id="busts-head" hidden>
+            <div>CSV по ID SKU</div>
+            <div>Процент маржи</div>
+            <div></div>
+          </div>
+          <div id="busts-body"></div>
+          <div class="empty" id="busts-empty">Нет правил буста. Нажмите «Добавить новый буст».</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      busts: [
+        { fileName: "yandex-1.csv", skus: ["ABC-1001", "ABC-1002", "XYZ-55"], bid: 6.57 },
+        { fileName: "ym-promo.csv", skus: ["PROMO-1", "PROMO-2"], bid: 8 },
+      ],
+      dirty: false,
+    };
+
+    function $(id) { return document.getElementById(id); }
+
+    function toast(msg) {
+      $("toast").textContent = msg;
+      setTimeout(() => { $("toast").textContent = ""; }, 2800);
+    }
+
+    function setDirty(v) {
+      state.dirty = v;
+      const btn = $("btn-save");
+      btn.classList.toggle("warn", v);
+      btn.classList.toggle("ok", !v);
+    }
+
+    function parseSkuCsv(text) {
+      const raw = String(text || "")
+        .replace(/^\uFEFF/, "")
+        .split(/[\r\n;,\t]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const seen = new Set();
+      const out = [];
+      for (const sku of raw) {
+        const key = sku.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(sku);
+      }
+      return out;
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    }
+
+    function render() {
+      const body = $("busts-body");
+      const empty = $("busts-empty");
+      const head = $("busts-head");
+      const has = state.busts.length > 0;
+      empty.hidden = has;
+      head.hidden = !has;
+
+      body.innerHTML = state.busts.map((b, i) => {
+        const count = (b.skus || []).length;
+        const meta = b.fileName
+          ? `${esc(b.fileName)} · ${count} SKU`
+          : "CSV не выбран";
+        return `<div class="bust-row" data-i="${i}">
+          <div class="csv-cell">
+            <input type="file" id="csv-${i}" data-i="${i}" accept=".csv,text/csv,text/plain" />
+            <label for="csv-${i}" class="btn-file">Выбрать CSV</label>
+            <div class="csv-meta ${b.fileName ? "has-file" : ""}">${meta}<span class="csv-hint">артикул в строке / через ; ,</span></div>
+          </div>
+          <input type="number" step="0.01" min="0" lang="en-US" data-f="bid" data-i="${i}" value="${b.bid}" />
+          <button type="button" class="danger" data-del="${i}">удалить</button>
+        </div>`;
+      }).join("");
+    }
+
+    $("busts-body").onchange = (e) => {
+      const t = e.target;
+      if (t.dataset.i == null) return;
+      const i = +t.dataset.i;
+
+      if (t.dataset.f === "bid") {
+        state.busts[i].bid = Number(t.value) || 0;
+        setDirty(true);
+        return;
+      }
+
+      if (t.type === "file") {
+        const file = t.files && t.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.busts[i].fileName = file.name;
+          state.busts[i].skus = parseSkuCsv(reader.result);
+          setDirty(true);
+          render();
+          toast(`Загружено ${state.busts[i].skus.length} SKU`);
+        };
+        reader.readAsText(file, "UTF-8");
+      }
+    };
+
+    $("busts-body").onclick = (e) => {
+      if (e.target.dataset.del == null) return;
+      state.busts.splice(+e.target.dataset.del, 1);
+      setDirty(true);
+      render();
+    };
+
+    $("btn-add").onclick = () => {
+      state.busts.push({ fileName: "", skus: [], bid: 0 });
+      setDirty(true);
+      render();
+    };
+
+    $("btn-save").onclick = () => {
+      setDirty(false);
+      const total = state.busts.reduce((n, b) => n + (b.skus || []).length, 0);
+      toast(`Mock: сохранено ${state.busts.length} правил · ${total} SKU`);
+    };
+
+    render();
+  </script>
+</body>
+</html>
